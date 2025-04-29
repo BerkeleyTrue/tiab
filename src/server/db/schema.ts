@@ -1,27 +1,95 @@
 // Example model schema from the Drizzle docs
 // https://orm.drizzle.team/docs/sql-schema-declaration
 
-import { sql } from "drizzle-orm";
+import { relations } from "drizzle-orm";
 import { index, sqliteTableCreator } from "drizzle-orm/sqlite-core";
 
-/**
- * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same
- * database instance for multiple projects.
- *
- * @see https://orm.drizzle.team/docs/goodies#multi-project-schema
- */
+
 export const createTable = sqliteTableCreator((name) => `tiab_${name}`);
 
-export const posts = createTable(
-  "post",
+export const users = createTable("user", (d) => ({
+  id: d.integer({ mode: "number" }).primaryKey({ autoIncrement: true }),
+  username: d.text({ length: 255 }),
+  password: d.text({ length: 255 }),
+}));
+
+// a user is a person who can create containers and items
+export const userRelationships = relations(users, ({ many }) => ({
+  containers: many(containers),
+  items: many(items),
+}))
+
+// a container contains items or other containers
+// it is a tree structure
+// the root container is the top level
+// the path is the path to the container
+// the parent is the path to the parent container
+// if you are in the root container, the path is "/"
+// the parent is null
+// if you are in a sub container, the path is "/subcontainer"
+// the parent is "/"
+// if you climb from path to parent all the way to the root node, you can build
+// the full path to the container like this: "/subcontainer/parent/container"
+export const containers = createTable(
+  "container",
+  (d) => ({
+    id: d.integer({ mode: "number" }).primaryKey({ autoIncrement: true }),
+    path: d.text({ length: 256 }),
+    parent: d.text({ length: 256 }),
+    userId: d.integer({ mode: "number" }).notNull(),
+    createdAt: d
+      .text()
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()), // When the fast record was created
+    updatedAt: d.text().$onUpdate(() => new Date().toISOString()), // When the fast record was last updated
+  }),
+  // a path and parent path index
+  (t) => [index("path_parent_idx").on(t.path, t.parent)],
+);
+
+// a container has one user
+// a user can have many containers
+// a container can have many items
+export const containerRelationships = relations(containers, ({ one, many }) => ({
+  user: one(users, {
+    fields: [containers.userId],
+    references: [users.id],
+  }),
+  items: many(items),
+}));
+
+// an item is a thing that can be in a container
+// it has a name and a description
+// there can only be one item with the same name in a container
+// it can be multiple items of the same type by count
+export const items = createTable(
+  "item",
   (d) => ({
     id: d.integer({ mode: "number" }).primaryKey({ autoIncrement: true }),
     name: d.text({ length: 256 }),
+    userId: d.integer({ mode: "number" }).notNull(),
+    count: d.integer({ mode: "number" }).default(1),
+    description: d.text(),
+    container: d.text({ length: 256 }),
     createdAt: d
-      .integer({ mode: "timestamp" })
-      .default(sql`(unixepoch())`)
-      .notNull(),
-    updatedAt: d.integer({ mode: "timestamp" }).$onUpdate(() => new Date()),
+      .text()
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()), // When the fast record was created
+    updatedAt: d.text().$onUpdate(() => new Date().toISOString()), // When the fast record was last updated
   }),
-  (t) => [index("name_idx").on(t.name)],
+  // a container index
+  (t) => [index("container_idx").on(t.container, t.name)],
 );
+
+// an item has one container
+// an item has one user
+export const itemRelationships = relations(items, ({ one }) => ({
+  container: one(containers, {
+    fields: [items.container],
+    references: [containers.path],
+  }),
+  user: one(users, {
+    fields: [items.userId],
+    references: [users.id],
+  }),
+}));

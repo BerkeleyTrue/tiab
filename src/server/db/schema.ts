@@ -1,8 +1,10 @@
 // Example model schema from the Drizzle docs
 // https://orm.drizzle.team/docs/sql-schema-declaration
 
+import type { z } from "zod";
 import { relations } from "drizzle-orm";
 import { index, sqliteTableCreator } from "drizzle-orm/sqlite-core";
+import { createInsertSchema } from "drizzle-zod";
 
 
 export const createTable = sqliteTableCreator((name) => `tiab_${name}`);
@@ -80,6 +82,10 @@ export const items = createTable(
   // a container index
   (t) => [index("container_idx").on(t.container, t.name)],
 );
+
+export const itemSelectSchema = createInsertSchema(items);
+
+export type Item = z.infer<typeof itemSelectSchema>;
 
 // an item has one container
 // an item has one user

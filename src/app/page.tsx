@@ -1,5 +1,5 @@
 import { HydrateClient } from "@/trpc/server";
-import { AddItemForm } from "./add-item";
+import { ItemsTable } from "./items";
 
 export default async function Home() {
 
@@ -9,8 +9,7 @@ export default async function Home() {
         <h1>Trapped In A Box</h1>
         <p>Welcome to the world of containers!</p>
       </header>
-
-      <AddItemForm />
+      <ItemsTable />
     </HydrateClient>
   );
 }

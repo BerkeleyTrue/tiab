@@ -28,6 +28,11 @@ export const createTRPCContext = async (opts: { headers: Headers }) => {
   return {
     db,
     ...opts,
+    session: {
+      user: {
+        id: 1,
+      },
+    },
   };
 };
 

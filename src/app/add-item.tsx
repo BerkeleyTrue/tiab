@@ -13,6 +13,7 @@ import { api } from "@/trpc/react";
 import { useState } from "react";
 
 export const AddItemForm = ({ onSuccess }: { onSuccess?: () => void }) => {
+  const utils = api.useUtils();
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -22,6 +23,8 @@ export const AddItemForm = ({ onSuccess }: { onSuccess?: () => void }) => {
 
   const mutate = api.items.create.useMutation({
     onSuccess: () => {
+      void utils.items.getAll.invalidate();
+
       setIsOpen(false);
       setName("");
       setDescription("");

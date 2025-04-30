@@ -134,7 +134,7 @@ WITH RECURSIVE recur_pathname AS (
 -- Select all containers in the path ordered from root to target
 SELECT 
   id,
-  pathname
+  '/' || pathname as pathname
 FROM recur_pathname 
 ORDER BY pathname;
 `)

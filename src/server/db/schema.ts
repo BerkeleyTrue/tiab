@@ -72,7 +72,7 @@ export const items = createTable(
     userId: d.integer({ mode: "number" }).notNull(),
     count: d.integer({ mode: "number" }).default(1),
     description: d.text(),
-    container: d.text({ length: 256 }).notNull(),
+    containerId: d.integer({ mode: "number" }).notNull(),
     createdAt: d
       .text()
       .notNull()
@@ -80,7 +80,7 @@ export const items = createTable(
     updatedAt: d.text().$onUpdate(() => new Date().toISOString()), // When the fast record was last updated
   }),
   // a container index
-  (t) => [index("container_idx").on(t.container, t.name)],
+  (t) => [index("item_container_idx").on(t.containerId, t.name)],
 );
 
 export const itemSelectSchema = createInsertSchema(items);
@@ -91,8 +91,8 @@ export type Item = z.infer<typeof itemSelectSchema>;
 // an item has one user
 export const itemRelationships = relations(items, ({ one }) => ({
   container: one(containers, {
-    fields: [items.container],
-    references: [containers.path],
+    fields: [items.containerId],
+    references: [containers.id],
   }),
   user: one(users, {
     fields: [items.userId],

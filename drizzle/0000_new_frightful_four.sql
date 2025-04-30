@@ -1,7 +1,7 @@
 CREATE TABLE `tiab_container` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-	`path` text(256),
-	`parent` text(256),
+	`path` text(256) NOT NULL,
+	`parent` text(256) NOT NULL,
 	`userId` integer NOT NULL,
 	`createdAt` text NOT NULL,
 	`updatedAt` text
@@ -10,16 +10,16 @@ CREATE TABLE `tiab_container` (
 CREATE INDEX `path_parent_idx` ON `tiab_container` (`path`,`parent`);--> statement-breakpoint
 CREATE TABLE `tiab_item` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-	`name` text(256),
+	`name` text(256) NOT NULL,
 	`userId` integer NOT NULL,
 	`count` integer DEFAULT 1,
 	`description` text,
-	`container` text(256),
+	`containerId` integer NOT NULL,
 	`createdAt` text NOT NULL,
 	`updatedAt` text
 );
 --> statement-breakpoint
-CREATE INDEX `container_idx` ON `tiab_item` (`container`,`name`);--> statement-breakpoint
+CREATE INDEX `item_container_idx` ON `tiab_item` (`containerId`,`name`);--> statement-breakpoint
 CREATE TABLE `tiab_user` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`username` text(255),

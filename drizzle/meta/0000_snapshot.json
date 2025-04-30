@@ -18,14 +18,14 @@
           "name": "path",
           "type": "text(256)",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "parent": {
           "name": "parent",
           "type": "text(256)",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "userId": {
@@ -79,7 +79,7 @@
           "name": "name",
           "type": "text(256)",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "userId": {
@@ -104,11 +104,11 @@
           "notNull": false,
           "autoincrement": false
         },
-        "container": {
-          "name": "container",
-          "type": "text(256)",
+        "containerId": {
+          "name": "containerId",
+          "type": "integer",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "createdAt": {
@@ -127,10 +127,10 @@
         }
       },
       "indexes": {
-        "container_idx": {
-          "name": "container_idx",
+        "item_container_idx": {
+          "name": "item_container_idx",
           "columns": [
-            "container",
+            "containerId",
             "name"
           ],
           "isUnique": false

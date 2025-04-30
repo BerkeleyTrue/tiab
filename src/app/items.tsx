@@ -52,9 +52,9 @@ export const ItemsTable = () => {
       cell: ({ row }) => <div>{row.getValue("count")}</div>,
     },
     {
-      accessorKey: "container",
+      accessorKey: "pathname",
       header: "Container",
-      cell: ({ row }) => <div>{row.getValue("container")}</div>,
+      cell: ({ row }) => <div>{row.getValue("pathname")}</div>,
     },
     {
       accessorKey: "createdAt",

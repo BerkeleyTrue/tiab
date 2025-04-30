@@ -17,7 +17,11 @@ export const itemsRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       return await ctx.db.transaction(async (tx) => {
         // Process container path and create container hierarchy
-        const segments = input.container.split("/").filter(Boolean);
+        const segments = input.container
+          .split("/")
+          .filter(Boolean)
+          .map((segment) => segment.trim().toLowerCase());
+
         const containerAncestry = segments.map((path, idx) => {
           return {
             path: path,
@@ -26,7 +30,6 @@ export const itemsRouter = createTRPCRouter({
         });
 
         for (const ancestor of containerAncestry) {
-          
           // Check if container exists
           const existingContainer = await tx
             .select()
@@ -36,10 +39,10 @@ export const itemsRouter = createTRPCRouter({
                 eq(containers.path, ancestor.path),
                 eq(containers.parent, ancestor.parent),
                 eq(containers.userId, ctx.session.user.id),
-              )
+              ),
             )
             .get();
-          
+
           // If container doesn't exist, create it
           if (!existingContainer) {
             await tx.insert(containers).values({
@@ -49,7 +52,7 @@ export const itemsRouter = createTRPCRouter({
             });
           }
         }
-        
+
         return await tx.insert(items).values({
           name: input.name,
           userId: ctx.session.user.id,

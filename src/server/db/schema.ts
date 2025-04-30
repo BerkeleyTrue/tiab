@@ -36,8 +36,8 @@ export const containers = createTable(
   "container",
   (d) => ({
     id: d.integer({ mode: "number" }).primaryKey({ autoIncrement: true }),
-    path: d.text({ length: 256 }),
-    parent: d.text({ length: 256 }),
+    path: d.text({ length: 256 }).notNull(),
+    parent: d.text({ length: 256 }).notNull(),
     userId: d.integer({ mode: "number" }).notNull(),
     createdAt: d
       .text()
@@ -68,11 +68,11 @@ export const items = createTable(
   "item",
   (d) => ({
     id: d.integer({ mode: "number" }).primaryKey({ autoIncrement: true }),
-    name: d.text({ length: 256 }),
+    name: d.text({ length: 256 }).notNull(),
     userId: d.integer({ mode: "number" }).notNull(),
     count: d.integer({ mode: "number" }).default(1),
     description: d.text(),
-    container: d.text({ length: 256 }),
+    container: d.text({ length: 256 }).notNull(),
     createdAt: d
       .text()
       .notNull()

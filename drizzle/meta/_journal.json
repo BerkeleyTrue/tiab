@@ -8,6 +8,13 @@
       "when": 1745958936291,
       "tag": "0000_new_frightful_four",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1746039690315,
+      "tag": "0001_modern_ego",
+      "breakpoints": true
     }
   ]
 }

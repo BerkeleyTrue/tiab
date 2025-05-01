@@ -1,6 +1,6 @@
 "use client";
 
-import { Home } from "lucide-react";
+import { Home, TreePine } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useCallback } from "react";
@@ -11,6 +11,7 @@ export const NavBar = () => {
 
   const navItems = [
     { label: "Home", icon: Home, route: "/" },
+    { label: "Containers", icon: TreePine, route: "/containers" },
   ];
 
   const isActive = useCallback(
@@ -48,7 +49,7 @@ export const NavBar = () => {
       </div>
 
       {/* Desktop Sidebar */}
-      <div className="fixed top-0 left-0 z-50 hidden h-full w-16 flex-col items-center border-r border-[var(--border)] bg-[var(--card)] py-8 md:flex">
+      <div className="fixed top-0 left-0 z-50 hidden h-full w-24 flex-col items-center border-r border-[var(--border)] bg-[var(--card)] py-8 md:flex">
         {navItems.map((item) => (
           <Link
             key={item.label}

@@ -1,8 +1,49 @@
 import { z } from "zod";
-
 import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
-import { containers } from "@/server/db/schema";
+import {
+  containers,
+  items,
+  type Container,
+  type DirectoryNode,
+} from "@/server/db/schema";
 import { and, like, eq } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
+import type { Tx } from "@/server/db";
+
+async function getDirectoryTree(
+  db: Tx,
+  parent: Container,
+  userId: number,
+): Promise<DirectoryNode> {
+  const res: DirectoryNode = {
+    parent,
+    items: [],
+    children: [],
+  };
+
+  const children = await db
+    .select()
+    .from(containers)
+    .where(
+      and(eq(containers.parent, parent.path), eq(containers.userId, userId)),
+    )
+    .all();
+
+  res.items = await db
+    .select()
+    .from(items)
+    .where(
+      and(eq(items.containerId, parent.id), eq(items.userId, userId)),
+    )
+    .all();
+
+  for (const child of children) {
+    const childNode = await getDirectoryTree(db, child, userId);
+    res.children.push(childNode);
+  }
+
+  return res;
+}
 
 export const containerRouter = createTRPCRouter({
   create: publicProcedure
@@ -41,13 +82,13 @@ export const containerRouter = createTRPCRouter({
         // "/abc/" or "/abc/def/"
         if (input.query.endsWith("/")) {
           parent = segments.pop() ?? "/";
-        // "/abc" or "/abc/def"
+          // "/abc" or "/abc/def"
         } else {
           // we have a search query
           parent = segments[segments.length - 2] ?? "/";
           query = segments.pop() ?? "-1";
         }
-      } 
+      }
 
       const queries = [
         eq(containers.parent, parent),
@@ -66,5 +107,35 @@ export const containerRouter = createTRPCRouter({
         .all();
 
       return res;
+    }),
+
+  getDirectoryTree: publicProcedure
+    .input(
+      z.object({
+        path: z.string().min(1),
+      }),
+    )
+    .query(async ({ ctx, input }): Promise<DirectoryNode> => {
+      return ctx.db.transaction(async (tx) => {
+        const parent = await tx
+          .select()
+          .from(containers)
+          .where(
+            and(
+              eq(containers.parent, input.path),
+              eq(containers.userId, ctx.session.user.id),
+            ),
+          )
+          .get();
+
+        if (!parent) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Container not found",
+          });
+        }
+
+        return getDirectoryTree(tx, parent, ctx.session.user.id);
+      });
     }),
 });

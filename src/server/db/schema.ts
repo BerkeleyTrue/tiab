@@ -4,7 +4,7 @@
 import type { z } from "zod";
 import { relations, sql } from "drizzle-orm";
 import { index, sqliteTableCreator, sqliteView, integer, text } from "drizzle-orm/sqlite-core";
-import { createInsertSchema } from "drizzle-zod";
+import { createSelectSchema } from "drizzle-zod";
 
 
 export const createTable = sqliteTableCreator((name) => `tiab_${name}`);
@@ -60,6 +60,9 @@ export const containerRelationships = relations(containers, ({ one, many }) => (
   items: many(items),
 }));
 
+const containerSelectSchema = createSelectSchema(containers); // eslint-disable-line @typescript-eslint/no-unused-vars
+export type Container = z.infer<typeof containerSelectSchema>;
+
 // an item is a thing that can be in a container
 // it has a name and a description
 // there can only be one item with the same name in a container
@@ -83,7 +86,7 @@ export const items = createTable(
   (t) => [index("item_container_idx").on(t.containerId, t.name)],
 );
 
-export const itemSelectSchema = createInsertSchema(items);
+export const itemSelectSchema = createSelectSchema(items);
 
 export type Item = z.infer<typeof itemSelectSchema>;
 
@@ -138,3 +141,10 @@ SELECT
 FROM recur_pathname 
 ORDER BY pathname;
 `)
+
+
+export type DirectoryNode = {
+  parent: Container;
+  items?: Item[];
+  children: DirectoryNode[];
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, TreePine } from "lucide-react";
+import { Home, Settings, TreePine } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useCallback } from "react";
@@ -12,6 +12,7 @@ export const NavBar = () => {
   const navItems = [
     { label: "Home", icon: Home, route: "/" },
     { label: "Containers", icon: TreePine, route: "/containers" },
+    { label: "Settings", icon: Settings, route: "/settings" },
   ];
 
   const isActive = useCallback(

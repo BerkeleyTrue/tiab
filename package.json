@@ -20,6 +20,7 @@
     "tc": "tsc --noEmit"
   },
   "dependencies": {
+    "@faker-js/faker": "^9.7.0",
     "@hookform/resolvers": "^5.0.1",
     "@libsql/client": "^0.14.0",
     "@radix-ui/react-dialog": "^1.1.11",

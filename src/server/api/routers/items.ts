@@ -95,7 +95,6 @@ export const itemsRouter = createTRPCRouter({
       .innerJoin(containersPathnameView, eq(items.containerId, containersPathnameView.id))
       .where(eq(items.userId, ctx.session.user.id));
 
-    console.log("Items: ", res);
     return res;
   }),
 });

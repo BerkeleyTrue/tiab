@@ -32,9 +32,7 @@ async function getDirectoryTree(
   res.items = await db
     .select()
     .from(items)
-    .where(
-      and(eq(items.containerId, parent.id), eq(items.userId, userId)),
-    )
+    .where(and(eq(items.containerId, parent.id), eq(items.userId, userId)))
     .all();
 
   for (const child of children) {
@@ -112,21 +110,36 @@ export const containerRouter = createTRPCRouter({
   getDirectoryTree: publicProcedure
     .input(
       z.object({
-        path: z.string().min(1),
+        containerId: z.number(),
       }),
     )
     .query(async ({ ctx, input }): Promise<DirectoryNode> => {
       return ctx.db.transaction(async (tx) => {
-        const parent = await tx
-          .select()
-          .from(containers)
-          .where(
-            and(
-              eq(containers.parent, input.path),
-              eq(containers.userId, ctx.session.user.id),
-            ),
-          )
-          .get();
+        // Handle root path specially
+        let parent: Container | undefined;
+        if (input.containerId === 0) {
+          // Create a virtual root container
+          parent = {
+            id: 0,
+            path: "/",
+            parent: "",
+            userId: ctx.session.user.id,
+            createdAt: new Date().toISOString(),
+            updatedAt: null,
+          };
+        } else {
+          // Non-root path handling
+          parent = await tx
+            .select()
+            .from(containers)
+            .where(
+              and(
+                eq(containers.id, input.containerId),
+                eq(containers.userId, ctx.session.user.id),
+              ),
+            )
+            .get();
+        }
 
         if (!parent) {
           throw new TRPCError({

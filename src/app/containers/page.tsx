@@ -3,7 +3,7 @@ import { ContainersTable } from "./containers-table";
 
 export default async function Page() {
   const tree = await api.containers.getDirectoryTree({
-    path: "/",
+    containerId: 0,
   })
 
   return (

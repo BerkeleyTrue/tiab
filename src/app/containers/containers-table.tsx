@@ -6,8 +6,6 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ChevronRight,
   ChevronDown,
-  Folder,
-  FolderOpen,
   Package,
   Box,
   Candy,
@@ -21,10 +19,9 @@ import { Badge } from "@/components/ui/badge";
 type TreeNodeProps = {
   node: DirectoryNode;
   level: number;
-  path: string;
 };
 
-const TreeNode = ({ node, level, path }: TreeNodeProps) => {
+const TreeNode = ({ node, level }: TreeNodeProps) => {
   const [isExpanded, setIsExpanded] = useState(level === 0);
   const hasChildren = node.children && node.children.length > 0;
   const hasItems = node.items && node.items.length > 0;
@@ -42,9 +39,6 @@ const TreeNode = ({ node, level, path }: TreeNodeProps) => {
 
     return (node.items?.length ?? 0) + getChildrenItemCount(node.children);
   }, [node]);
-
-  const fullPath =
-    path === "/" ? `/${node.parent.path}` : `${path}/${node.parent.path}`;
 
   const toggleExpand = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -80,8 +74,8 @@ const TreeNode = ({ node, level, path }: TreeNodeProps) => {
           )}
         </div>
 
-        <Link href={`/containers${fullPath}`} className="flex-1 truncate">
-          {node.parent.path === "/" ? "Root" : node.parent.path}
+        <Link href={`/containers/${node.parent.id}`} className="flex-1 truncate">
+          {node.parent.path}
         </Link>
 
         {itemCount > 0 && (
@@ -112,7 +106,6 @@ const TreeNode = ({ node, level, path }: TreeNodeProps) => {
                 key={`${child.parent.id}-${index}`}
                 node={child}
                 level={level + 1}
-                path={fullPath}
               />
             ))}
         </>
@@ -142,14 +135,14 @@ export const ContainersTable = ({ tree }: { tree: DirectoryNode }) => {
   const utils = api.useUtils();
 
   useEffect(() => {
-    utils.containers.getDirectoryTree.setData({ path: "/" }, tree);
+    utils.containers.getDirectoryTree.setData({ containerId: tree.parent.id }, tree);
   }, [tree, utils.containers.getDirectoryTree]);
 
-  const { data, isLoading } = api.containers.getDirectoryTree.useQuery({
-    path: "/",
+  const { data = tree, isLoading } = api.containers.getDirectoryTree.useQuery({
+    containerId: tree.parent.id,
   });
 
-  if (isLoading || !data) {
+  if (!data && isLoading) {
     return <div className="flex justify-center p-4">Loading containers...</div>;
   }
 
@@ -159,7 +152,7 @@ export const ContainersTable = ({ tree }: { tree: DirectoryNode }) => {
         <CardTitle>Containers</CardTitle>
       </CardHeader>
       <CardContent>
-        <TreeNode node={data} level={0} path="" />
+        <TreeNode node={data} level={0} />
       </CardContent>
     </Card>
   );

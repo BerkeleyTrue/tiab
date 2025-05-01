@@ -10,6 +10,7 @@ import {
   Box,
   Candy,
   PackageOpen,
+  SquareArrowOutUpRight,
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -74,9 +75,9 @@ const TreeNode = ({ node, level }: TreeNodeProps) => {
           )}
         </div>
 
-        <Link href={`/containers/${node.parent.id}`} className="flex-1 truncate">
+        <div className="flex-1 truncate">
           {node.parent.path}
-        </Link>
+        </div>
 
         {itemCount > 0 && (
           <Badge variant="secondary" className="mr-2">
@@ -84,10 +85,14 @@ const TreeNode = ({ node, level }: TreeNodeProps) => {
           </Badge>
         )}
         {node.children.length > 0 && (
-          <Badge variant="secondary">
+          <Badge variant="secondary" className="mr-2">
             {node.children.length} <Box className="inline-block h-4 w-4" />
           </Badge>
         )}
+
+        <Link href={`/containers/${node.parent.id}`} className="mr-2">
+          <SquareArrowOutUpRight className="h-4 w-4" />
+        </Link>
       </div>
 
       {isExpanded && (

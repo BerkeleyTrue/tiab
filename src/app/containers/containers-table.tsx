@@ -121,9 +121,10 @@ const TreeNode = ({ node, level }: TreeNodeProps) => {
 
 const ItemRow = ({ item, level }: { item: Item; level: number }) => {
   return (
-    <div
+    <Link
       className="flex items-center rounded-md px-2 py-1"
       style={{ paddingLeft: `${level * 16 + 8}px` }}
+      href={`/items/${item.id}`}
     >
       <Package className="mr-2 h-4 w-4" />
       <span className="truncate">{item.name}</span>
@@ -132,7 +133,7 @@ const ItemRow = ({ item, level }: { item: Item; level: number }) => {
           x{item.count}
         </span>
       )}
-    </div>
+    </Link>
   );
 };
 

@@ -97,4 +97,32 @@ export const itemsRouter = createTRPCRouter({
 
     return res;
   }),
+  
+  getById: publicProcedure
+    .input(z.object({ itemId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const item = await ctx.db
+        .select({
+          ...getTableColumns(items),
+          pathname: containersPathnameView.pathname,
+        })
+        .from(items)
+        .innerJoin(containersPathnameView, eq(items.containerId, containersPathnameView.id))
+        .where(
+          and(
+            eq(items.id, input.itemId),
+            eq(items.userId, ctx.session.user.id)
+          )
+        )
+        .get();
+
+      if (!item) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Item with ID ${input.itemId} not found`,
+        });
+      }
+
+      return item;
+    }),
 });

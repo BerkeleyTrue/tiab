@@ -25,8 +25,16 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { FolderIcon, CheckIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-export const AddItemForm = ({ onSuccess }: { onSuccess?: () => void }) => {
+
+export const AddItemForm = ({
+  onSuccess,
+  className,
+}: {
+  onSuccess?: () => void;
+  className?: string;
+}) => {
   const utils = api.useUtils();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -151,7 +159,7 @@ export const AddItemForm = ({ onSuccess }: { onSuccess?: () => void }) => {
     <>
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogTrigger asChild>
-          <Button variant="default" className="px-4 py-2">
+          <Button variant="default" className={cn("px-4 py-2", className)}>
             Add Item
           </Button>
         </DialogTrigger>

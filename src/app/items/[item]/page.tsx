@@ -1,20 +1,10 @@
 import { api } from "@/trpc/server";
 import { notFound } from "next/navigation";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Package, Home, Calendar, Clock, PackageOpen } from "lucide-react";
+import { Home } from "lucide-react";
 import Link from "next/link";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { formatDistanceToNow } from "date-fns";
-import { AddItemForm } from "@/app/add-item";
+import { ItemView } from "./item-view";
 
 export default async function ItemPage({
   params,
@@ -55,72 +45,7 @@ export default async function ItemPage({
 
     return (
       <div className="container mx-auto max-w-4xl p-4">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <CardTitle className="flex items-center text-2xl">
-                  <Package className="mr-2 h-6 w-6" />
-                  {item.name}
-                </CardTitle>
-                <CardDescription>
-                  Located in:{" "}
-                  <Link
-                    href={`/containers/${item.containerId}`}
-                    className="hover:underline"
-                  >
-                    {item.pathname}
-                  </Link>
-                </CardDescription>
-              </div>
-
-              {(item.count ?? 0) > 1 && (
-                <Badge variant="secondary" className="mr-4 px-3 py-1 text-lg">
-                  x{item.count}
-                </Badge>
-              )}
-              <AddItemForm className="mr-4" />
-
-              <Button variant="outline" asChild>
-                <Link href={`/containers/${item.containerId}`}>
-                  <PackageOpen className="h-4 w-4" />
-                </Link>
-              </Button>
-            </div>
-          </CardHeader>
-
-          <CardContent>
-            {item.description ? (
-              <div className="prose dark:prose-invert max-w-none">
-                <h3>Description</h3>
-                <p>{item.description}</p>
-              </div>
-            ) : (
-              <p className="text-muted-foreground italic">
-                No description provided
-              </p>
-            )}
-          </CardContent>
-
-          <CardFooter className="text-muted-foreground flex justify-between text-sm">
-            <div className="flex items-center">
-              <Calendar className="mr-1 h-4 w-4" />
-              Created{" "}
-              {formatDistanceToNow(new Date(item.createdAt), {
-                addSuffix: true,
-              })}
-            </div>
-            {item.updatedAt && (
-              <div className="flex items-center">
-                <Clock className="mr-1 h-4 w-4" />
-                Updated{" "}
-                {formatDistanceToNow(new Date(item.updatedAt), {
-                  addSuffix: true,
-                })}
-              </div>
-            )}
-          </CardFooter>
-        </Card>
+        <ItemView item={item} />
       </div>
     );
   } catch {

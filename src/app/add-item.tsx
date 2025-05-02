@@ -1,12 +1,9 @@
-"use client";
-
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { api } from "@/trpc/react";
@@ -25,19 +22,18 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { FolderIcon, CheckIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
-
 
 export const AddItemForm = ({
+  isOpen,
+  onClose,
   onSuccess,
-  className,
 }: {
+  isOpen: boolean;
+  onClose: () => void;
   onSuccess?: () => void;
-  className?: string;
 }) => {
   const utils = api.useUtils();
 
-  const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [count, setCount] = useState(1);
@@ -73,8 +69,7 @@ export const AddItemForm = ({
   const mutate = api.items.create.useMutation({
     onSuccess: () => {
       void utils.items.getAll.invalidate();
-
-      setIsOpen(false);
+      onClose();
       setName("");
       setDescription("");
       setCount(1);
@@ -156,124 +151,117 @@ export const AddItemForm = ({
   };
 
   return (
-    <>
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogTrigger asChild>
-          <Button variant="default" className={cn("px-4 py-2", className)}>
-            Add Item
-          </Button>
-        </DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Item</DialogTitle>
-          </DialogHeader>
-          <form className="flex w-full flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              <label htmlFor="container">Container</label>
-              <Popover open={openPopover} onOpenChange={setOpenPopover}>
-                <PopoverTrigger asChild>
-                  <div className="relative">
-                    <Input
-                      id="container"
-                      value={container}
-                      onChange={(e) => {
-                        e.preventDefault();
-                      }}
-                      onClick={(e) => e.preventDefault()}
-                      onFocus={() => {
-                        setOpenPopover(true);
-                        containerInputRef.current?.focus();
-                      }}
-                      placeholder="/storage/location"
-                      className="w-full"
-                    />
-                  </div>
-                </PopoverTrigger>
-                <PopoverContent className="p-0" align="start">
-                  <Command>
-                    <CommandInput
-                      ref={containerInputRef}
-                      placeholder="Search containers..."
-                      value={container.split("/").pop() ?? ""}
-                      onValueChange={handleCommandValueChange}
-                      onKeyDown={handleCommandKeyDown}
-                    />
-                    <CommandList>
-                      <CommandEmpty>No containers found.</CommandEmpty>
-                      <CommandGroup heading="Containers">
-                        {containers?.length ? (
-                          containers.map((item) => (
-                            <CommandItem
-                              key={item.id}
-                              value={item.path}
-                              onSelect={handleCommandSelect}
-                              className="flex items-center gap-2"
-                            >
-                              <FolderIcon className="h-4 w-4" />
-                              <span>{item.path}</span>
-                              {container === item.path && (
-                                <CheckIcon className="ml-auto h-4 w-4" />
-                              )}
-                            </CommandItem>
-                          ))
-                        ) : (
-                          <CommandItem disabled>
-                            {isLoading ? "Loading..." : "Type to search"}
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Add New Item</DialogTitle>
+        </DialogHeader>
+        <form className="flex w-full flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <label htmlFor="container">Container</label>
+            <Popover open={openPopover} onOpenChange={setOpenPopover}>
+              <PopoverTrigger asChild>
+                <div className="relative">
+                  <Input
+                    id="container"
+                    value={container}
+                    onChange={(e) => {
+                      e.preventDefault();
+                    }}
+                    onClick={(e) => e.preventDefault()}
+                    onFocus={() => {
+                      setOpenPopover(true);
+                      containerInputRef.current?.focus();
+                    }}
+                    placeholder="/storage/location"
+                    className="w-full"
+                  />
+                </div>
+              </PopoverTrigger>
+              <PopoverContent className="p-0" align="start">
+                <Command>
+                  <CommandInput
+                    ref={containerInputRef}
+                    placeholder="Search containers..."
+                    value={container.split("/").pop() ?? ""}
+                    onValueChange={handleCommandValueChange}
+                    onKeyDown={handleCommandKeyDown}
+                  />
+                  <CommandList>
+                    <CommandEmpty>No containers found.</CommandEmpty>
+                    <CommandGroup heading="Containers">
+                      {containers?.length ? (
+                        containers.map((item) => (
+                          <CommandItem
+                            key={item.id}
+                            value={item.path}
+                            onSelect={handleCommandSelect}
+                            className="flex items-center gap-2"
+                          >
+                            <FolderIcon className="h-4 w-4" />
+                            <span>{item.path}</span>
+                            {container === item.path && (
+                              <CheckIcon className="ml-auto h-4 w-4" />
+                            )}
                           </CommandItem>
-                        )}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+                        ))
+                      ) : (
+                        <CommandItem disabled>
+                          {isLoading ? "Loading..." : "Type to search"}
+                        </CommandItem>
+                      )}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
 
-              <label htmlFor="name">Name</label>
-              <Input
-                id="name"
-                ref={nameInputRef}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Item name"
-              />
+            <label htmlFor="name">Name</label>
+            <Input
+              id="name"
+              ref={nameInputRef}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Item name"
+            />
 
-              <label htmlFor="description">Description</label>
-              <Input
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Item description"
-              />
+            <label htmlFor="description">Description</label>
+            <Input
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Item description"
+            />
 
-              <label htmlFor="count">Count</label>
-              <Input
-                id="count"
-                type="number"
-                min="1"
-                value={count}
-                onChange={(e) => setCount(Number(e.target.value))}
-                placeholder="Quantity"
-              />
+            <label htmlFor="count">Count</label>
+            <Input
+              id="count"
+              type="number"
+              min="1"
+              value={count}
+              onChange={(e) => setCount(Number(e.target.value))}
+              placeholder="Quantity"
+            />
 
-              {error && <p className="text-sm text-red-500">{error}</p>}
-            </div>
-            <Button
-              type="submit"
-              className="mt-2"
-              disabled={mutate.isPending}
-              onClick={(e) => {
-                e.preventDefault();
-                if (!name.trim()) {
-                  setError("Name is required");
-                  return;
-                }
-                mutate.mutate({ name, description, count, container });
-              }}
-            >
-              {mutate.isPending ? "Adding..." : "Add Item"}
-            </Button>
-          </form>
-        </DialogContent>
-      </Dialog>
-    </>
+            {error && <p className="text-sm text-red-500">{error}</p>}
+          </div>
+          <Button
+            type="submit"
+            className="mt-2"
+            disabled={mutate.isPending}
+            onClick={(e) => {
+              e.preventDefault();
+              if (!name.trim()) {
+                setError("Name is required");
+                return;
+              }
+              mutate.mutate({ name, description, count, container });
+            }}
+          >
+            {mutate.isPending ? "Adding..." : "Add Item"}
+          </Button>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 };

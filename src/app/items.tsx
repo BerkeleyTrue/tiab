@@ -29,12 +29,14 @@ import type { ItemWithPathname } from "@/server/db/schema";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { AddItemForm } from "./add-item";
 import { format } from "date-fns";
+import { useBoolean } from "@/hooks/use-boolean";
 
 export const ItemsTable = ({
   initItems,
@@ -44,6 +46,11 @@ export const ItemsTable = ({
   const utils = api.useUtils();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const {
+    value: isAddItemOpen,
+    setTrue: openAddItem,
+    setFalse: closeAddItem,
+  } = useBoolean();
 
   useEffect(() => {
     utils.items.getAll.setData(undefined, initItems);
@@ -102,18 +109,26 @@ export const ItemsTable = ({
 
   return (
     <Card className="w-full max-w-2xl p-4">
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <Input
-            placeholder="Filter by name..."
-            value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-            onChange={(event) =>
-              table.getColumn("name")?.setFilterValue(event.target.value)
-            }
-            className="max-w-sm"
-          />
-          <AddItemForm />
-        </CardTitle>
+      <CardHeader className="">
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center justify-between">
+            <Input
+              placeholder="Filter by name..."
+              value={
+                (table.getColumn("name")?.getFilterValue() as string) ?? ""
+              }
+              onChange={(event) =>
+                table.getColumn("name")?.setFilterValue(event.target.value)
+              }
+              className="max-w-sm"
+            />
+          </CardTitle>
+          <CardDescription>
+            <p className="text-muted-foreground text-sm">
+              {items.length} items found.
+            </p>
+          </CardDescription>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-center justify-between"></div>
@@ -166,7 +181,14 @@ export const ItemsTable = ({
           </Table>
         </div>
       </CardContent>
+
       <CardFooter className="justify-end gap-2">
+        <Button variant="outline" onClick={openAddItem}>
+          Add Item
+        </Button>
+
+        <div className="flex-1" />
+
         <Button
           variant="outline"
           size="sm"
@@ -184,6 +206,7 @@ export const ItemsTable = ({
           Next
         </Button>
       </CardFooter>
+      <AddItemForm isOpen={isAddItemOpen} onClose={closeAddItem} />
     </Card>
   );
 };

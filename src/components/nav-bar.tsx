@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, Settings, TreePine } from "lucide-react";
+import { Bone, Home, Settings, TreePine } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useCallback } from "react";
@@ -11,6 +11,7 @@ export const NavBar = () => {
 
   const navItems = [
     { label: "Home", icon: Home, route: "/" },
+    { label: "Items", icon: Bone, route: "/items" },
     { label: "Containers", icon: TreePine, route: "/containers" },
     { label: "Settings", icon: Settings, route: "/settings" },
   ];

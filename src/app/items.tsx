@@ -108,7 +108,7 @@ export const ItemsTable = ({
   }
 
   return (
-    <Card className="w-full max-w-2xl p-4">
+    <Card className="w-full max-w-2xl">
       <CardHeader className="">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center justify-between">

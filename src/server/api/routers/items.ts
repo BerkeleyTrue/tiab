@@ -1,9 +1,8 @@
 import { z } from "zod";
 
 import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
-import { items, containers, containersPathnameView, type Item, type ItemWithPathname } from "@/server/db/schema";
-import { and, eq, getTableColumns } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { items, containersPathnameView, type ItemWithPathname } from "@/server/db/schema";
+import { eq, getTableColumns } from "drizzle-orm";
 
 export const itemsRouter = createTRPCRouter({
   create: publicProcedure
@@ -16,72 +15,11 @@ export const itemsRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      return await ctx.db.transaction(async (tx) => {
-        // Process container path and create container hierarchy
-        const segments = input.container
-          .split("/")
-          .filter(Boolean)
-          .map((segment) => segment.trim().toLowerCase());
-
-        const containerAncestry = segments.map((path, idx) => {
-          return {
-            path: path,
-            parent: segments[idx - 1] ?? "/",
-          };
-        });
-
-        for (const ancestor of containerAncestry) {
-          // Check if container exists
-          const existingContainer = await tx
-            .select()
-            .from(containers)
-            .where(
-              and(
-                eq(containers.path, ancestor.path),
-                eq(containers.parent, ancestor.parent),
-                eq(containers.userId, ctx.session.user.id),
-              ),
-            )
-            .get();
-
-          // If container doesn't exist, create it
-          if (!existingContainer) {
-            await tx.insert(containers).values({
-              path: ancestor.path,
-              parent: ancestor.parent,
-              userId: ctx.session.user.id,
-            });
-          }
-        }
-
-        const itemContainer = containerAncestry[containerAncestry.length - 1];
-
-        const containerId = await tx
-          .select({ id: containers.id })
-          .from(containers)
-          .where(
-            and(
-              eq(containers.path, itemContainer?.path ?? ""),
-              eq(containers.parent, itemContainer?.parent ?? ""),
-              eq(containers.userId, ctx.session.user.id),
-            ),
-          )
-          .get();
-
-        if (!containerId) {
-          throw new TRPCError({
-            message: `Expected to find item container but found none: ${itemContainer?.path}`,
-            code: "NOT_FOUND",
-          });
-        }
-
-        return await tx.insert(items).values({
-          name: input.name,
-          userId: ctx.session.user.id,
-          containerId: containerId.id,
-          description: input.description,
-          count: input.count,
-        });
+      return ctx.repos.items.create({
+        name: input.name,
+        container: input.container,
+        description: input.description,
+        count: input.count,
       });
     }),
 
@@ -101,28 +39,20 @@ export const itemsRouter = createTRPCRouter({
   getById: publicProcedure
     .input(z.object({ itemId: z.number() }))
     .query(async ({ ctx, input }) => {
-      const item = await ctx.db
-        .select({
-          ...getTableColumns(items),
-          pathname: containersPathnameView.pathname,
-        })
-        .from(items)
-        .innerJoin(containersPathnameView, eq(items.containerId, containersPathnameView.id))
-        .where(
-          and(
-            eq(items.id, input.itemId),
-            eq(items.userId, ctx.session.user.id)
-          )
-        )
-        .get();
+      return await ctx.repos.items.getById({ itemId: input.itemId });
+    }),
 
-      if (!item) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: `Item with ID ${input.itemId} not found`,
-        });
-      }
-
-      return item;
+  update: publicProcedure
+    .input(
+      z.object({
+        itemId: z.number(),
+        container: z.string().min(1),
+        name: z.string().optional(),
+        description: z.string().optional(),
+        count: z.number().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      return ctx.repos.items.update(input);
     }),
 });

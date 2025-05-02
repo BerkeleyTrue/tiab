@@ -11,6 +11,8 @@ import superjson from "superjson";
 import { ZodError } from "zod";
 
 import { db } from "@/server/db";
+import { ContainerRepository } from "../repositories/containers";
+import ItemsRepository from "../repositories/items";
 
 /**
  * 1. CONTEXT
@@ -25,6 +27,9 @@ import { db } from "@/server/db";
  * @see https://trpc.io/docs/server/context
  */
 export const createTRPCContext = async (opts: { headers: Headers }) => {
+  const containers = new ContainerRepository(db, { userId: 1 });
+  const items = new ItemsRepository(db, { userId: 1 }, containers);
+
   return {
     db,
     ...opts,
@@ -33,8 +38,14 @@ export const createTRPCContext = async (opts: { headers: Headers }) => {
         id: 1,
       },
     },
+    repos: {
+      containers,
+      items
+    },
   };
 };
+
+export type TRPContext = Awaited<ReturnType<typeof createTRPCContext>>;
 
 /**
  * 2. INITIALIZATION

@@ -3,9 +3,14 @@
 
 import type { z } from "zod";
 import { relations, sql } from "drizzle-orm";
-import { index, sqliteTableCreator, sqliteView, integer, text } from "drizzle-orm/sqlite-core";
-import { createSelectSchema } from "drizzle-zod";
-
+import {
+  index,
+  sqliteTableCreator,
+  sqliteView,
+  integer,
+  text,
+} from "drizzle-orm/sqlite-core";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 
 export const createTable = sqliteTableCreator((name) => `tiab_${name}`);
 
@@ -19,7 +24,7 @@ export const users = createTable("user", (d) => ({
 export const userRelationships = relations(users, ({ many }) => ({
   containers: many(containers),
   items: many(items),
-}))
+}));
 
 // a container contains items or other containers
 // it is a tree structure
@@ -52,13 +57,16 @@ export const containers = createTable(
 // a container has one user
 // a user can have many containers
 // a container can have many items
-export const containerRelationships = relations(containers, ({ one, many }) => ({
-  user: one(users, {
-    fields: [containers.userId],
-    references: [users.id],
+export const containerRelationships = relations(
+  containers,
+  ({ one, many }) => ({
+    user: one(users, {
+      fields: [containers.userId],
+      references: [users.id],
+    }),
+    items: many(items),
   }),
-  items: many(items),
-}));
+);
 
 const containerSelectSchema = createSelectSchema(containers); // eslint-disable-line @typescript-eslint/no-unused-vars
 export type Container = z.infer<typeof containerSelectSchema>;
@@ -87,8 +95,10 @@ export const items = createTable(
 );
 
 export const itemSelectSchema = createSelectSchema(items);
+export const createItemSchema = createInsertSchema(items);
 
 export type Item = z.infer<typeof itemSelectSchema>;
+
 export type ItemWithPathname = Item & {
   pathname: string;
 };
@@ -106,7 +116,7 @@ export const itemRelationships = relations(items, ({ one }) => ({
   }),
 }));
 
-export const containersPathnameView = sqliteView("containers_pathname", { 
+export const containersPathnameView = sqliteView("containers_pathname", {
   id: integer("id").primaryKey(),
   pathname: text("pathname").notNull(),
 }).as(sql`
@@ -143,11 +153,10 @@ SELECT
   '/' || pathname as pathname
 FROM recur_pathname 
 ORDER BY pathname;
-`)
-
+`);
 
 export type DirectoryNode = {
   parent: Container;
   items?: Item[];
   children: DirectoryNode[];
-}
+};

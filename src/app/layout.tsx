@@ -30,7 +30,7 @@ export default function RootLayout({
             <main
               className={cn(
                 "flex w-full flex-col items-center justify-center md:w-[calc(100%-calc(var(--spacing)*24))]",
-                "pb-16 md:pb-0 md:pl-16 md:m-2",
+                "pb-16 md:pb-0 md:m-2",
                 "bg-[var(--ctp-surface1)] md:rounded-xl md:shadow",
               )}
             >

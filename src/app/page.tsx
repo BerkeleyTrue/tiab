@@ -10,7 +10,7 @@ export default async function Home() {
       <Card variant="outline">
         <CardContent>
           <header>
-            <h1>Trapped In A Box</h1>
+            <h1 className="text-lg font-bold">Trapped In A Box</h1>
             <p>Welcome to the world of containers!</p>
           </header>
         </CardContent>

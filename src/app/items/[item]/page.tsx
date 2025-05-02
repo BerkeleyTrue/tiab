@@ -44,7 +44,7 @@ export default async function ItemPage({
     }
 
     return (
-      <div className="container mx-auto max-w-4xl p-4">
+      <div className="container mx-auto max-w-4xl p-1 md:p-4">
         <ItemView item={item} />
       </div>
     );

@@ -37,6 +37,8 @@ import {
 import { AddItemForm } from "./add-item";
 import { format } from "date-fns";
 import { useBoolean } from "@/hooks/use-boolean";
+import { Edit } from "lucide-react";
+import Link from "next/link";
 
 export const ItemsTable = ({
   initItems,
@@ -86,6 +88,16 @@ export const ItemsTable = ({
         <div>{format(row.getValue("createdAt"), "M/dd/yyyy")}</div>
       ),
     },
+    {
+      header: "View",
+      cell: ({ row }) => (
+        <Link href={`/items/${row.original.id}`}>
+          <Button variant="ghost" size="sm">
+            <Edit className="h-4 w-4" />
+          </Button>
+        </Link>
+      ),
+    },
   ];
 
   const table = useReactTable({
@@ -131,8 +143,7 @@ export const ItemsTable = ({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-center justify-between"></div>
-        <div className="rounded-md border">
+        <div className="rounded border">
           <Table>
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (

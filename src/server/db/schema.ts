@@ -89,6 +89,9 @@ export const items = createTable(
 export const itemSelectSchema = createSelectSchema(items);
 
 export type Item = z.infer<typeof itemSelectSchema>;
+export type ItemWithPathname = Item & {
+  pathname: string;
+};
 
 // an item has one container
 // an item has one user

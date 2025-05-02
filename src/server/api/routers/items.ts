@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
-import { items, containers, containersPathnameView } from "@/server/db/schema";
+import { items, containers, containersPathnameView, type Item, type ItemWithPathname } from "@/server/db/schema";
 import { and, eq, getTableColumns } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
@@ -85,7 +85,7 @@ export const itemsRouter = createTRPCRouter({
       });
     }),
 
-  getAll: publicProcedure.query(async ({ ctx }) => {
+  getAll: publicProcedure.query(async ({ ctx }): Promise<ItemWithPathname[]> => {
     const res = await ctx.db
       .select({
         ...getTableColumns(items),

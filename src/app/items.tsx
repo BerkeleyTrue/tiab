@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   type ColumnDef,
   type SortingState,
@@ -25,17 +25,23 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { Item } from "@/server/db/schema";
+import type { ItemWithPathname } from "@/server/db/schema";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { AddItemForm } from "./add-item";
+import { format } from "date-fns";
 
-export const ItemsTable = () => {
+export const ItemsTable = ({ initItems }: { initItems: ItemWithPathname[] }) => {
+  const utils = api.useUtils();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
-  const { data: items, isLoading } = api.items.getAll.useQuery();
+  useEffect(() => {
+    utils.items.getAll.setData(undefined, initItems);
+  }, [initItems, utils.items.getAll]);
 
-  const columns: ColumnDef<Item>[] = [
+  const { data: items = initItems, isLoading } = api.items.getAll.useQuery();
+
+  const columns: ColumnDef<ItemWithPathname>[] = [
     {
       accessorKey: "name",
       header: "Name",
@@ -60,7 +66,7 @@ export const ItemsTable = () => {
       accessorKey: "createdAt",
       header: "Created",
       cell: ({ row }) => (
-        <div>{new Date(row.getValue("createdAt")).toLocaleDateString()}</div>
+        <div>{format(row.getValue("createdAt"), "M/dd/yyyy")}</div>
       ),
     },
   ];
@@ -80,7 +86,7 @@ export const ItemsTable = () => {
     },
   });
 
-  if (isLoading) {
+  if (!items.length && isLoading) {
     return <div className="flex justify-center p-4">Loading items...</div>;
   }
 

@@ -56,17 +56,26 @@ export class ContainerRepository {
     return new ContainerRepository(tx, this.session);
   }
 
-  async create(input: { path: string; parent: string }): Promise<Container | null> {
-    const res = await this.db.insert(containers).values({
-      path: input.path,
-      parent: input.parent,
-      userId: this.session.userId,
-    }).returning();
+  async create(input: {
+    path: string;
+    parent: string;
+  }): Promise<Container | null> {
+    const res = await this.db
+      .insert(containers)
+      .values({
+        path: input.path,
+        parent: input.parent,
+        userId: this.session.userId,
+      })
+      .returning();
 
     return res[0] ?? null;
   }
 
-  async getByPath(input: { path: string; parent: string }) : Promise<Container | null> {
+  async getByPath(input: {
+    path: string;
+    parent: string;
+  }): Promise<Container | null> {
     const res = await this.db
       .select()
       .from(containers)
@@ -82,7 +91,10 @@ export class ContainerRepository {
     return res ?? null;
   }
 
-  async getOrCreate(input: { path: string; parent: string }): Promise<Container | null> {
+  async getOrCreate(input: {
+    path: string;
+    parent: string;
+  }): Promise<Container | null> {
     const existingContainer = await this.getByPath({
       path: input.path,
       parent: input.parent,
@@ -100,38 +112,35 @@ export class ContainerRepository {
   }
 
   async ensurePathname(input: { pathname: string }): Promise<Container | null> {
-    return this.db.transaction(async (tx) => {
-      const containers = this.withTransaction(tx);
 
-      // Process container path and create container hierarchy
-      const segments = input.pathname
-        .split("/")
-        .filter(Boolean)
-        .map((segment) => segment.trim().toLowerCase());
+    // Process container path and create container hierarchy
+    const segments = input.pathname
+      .split("/")
+      .filter(Boolean)
+      .map((segment) => segment.trim().toLowerCase());
 
-      const containerAncestry = segments.map((path, idx) => {
-        return {
-          path: path,
-          parent: segments[idx - 1] ?? "/",
-        };
-      });
-
-      for (const ancestor of containerAncestry) {
-        await containers.getOrCreate({
-          path: ancestor.path,
-          parent: ancestor.parent,
-        });
-      }
-
-      const itemContainer = containerAncestry[containerAncestry.length - 1];
-
-      const containerBase = await containers.getByPath({
-        path: itemContainer?.path ?? "",
-        parent: itemContainer?.parent ?? "",
-      });
-
-      return containerBase;
+    const containerAncestry = segments.map((path, idx) => {
+      return {
+        path: path,
+        parent: segments[idx - 1] ?? "/",
+      };
     });
+
+    for (const ancestor of containerAncestry) {
+      await this.getOrCreate({
+        path: ancestor.path,
+        parent: ancestor.parent,
+      });
+    }
+
+    const itemContainer = containerAncestry[containerAncestry.length - 1];
+
+    const containerBase = await this.getByPath({
+      path: itemContainer?.path ?? "",
+      parent: itemContainer?.parent ?? "",
+    });
+
+    return containerBase;
   }
 
   async search(input: { query: string }): Promise<Container[]> {
@@ -172,7 +181,9 @@ export class ContainerRepository {
     return res;
   }
 
-  async getDirectoryTree(input: { containerId: number }): Promise<DirectoryNode> {
+  async getDirectoryTree(input: {
+    containerId: number;
+  }): Promise<DirectoryNode> {
     return this.db.transaction(async (tx) => {
       // Handle root path specially
       let parent: Container | undefined;

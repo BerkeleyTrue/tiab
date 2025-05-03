@@ -40,7 +40,8 @@ export default class ItemsRepository {
     input: CreateItemSchema & { container: string },
   ): Promise<ItemWithPathname | null> {
     return this.db.transaction(async (tx) => {
-      const containerBase = await this.containerRepo.ensurePathname({
+      const containerTx = this.containerRepo.withTransaction(tx);
+      const containerBase = await containerTx.ensurePathname({
         pathname: input.container,
       });
 
@@ -59,17 +60,69 @@ export default class ItemsRepository {
           description: input.description,
           count: input.count,
         })
-        .returning({
-          ...getTableColumns(items),
-          pathname: containersPathnameView.pathname,
-        });
+        .returning();
 
-      if (!res[0]) {
+      const newItem = res[0];
+
+      if (!newItem) {
         return null;
       }
 
-      return res[0];
+      return {
+        ...newItem,
+        pathname: await this.getPathname({ itemId: newItem.id }) ?? "",
+      };
     });
+  }
+
+  async getPathname(input: { itemId: number }): Promise<string | null> {
+    const res = await this.db
+      .select({
+        pathname: containersPathnameView.pathname,
+      })
+      .from(items)
+      .innerJoin(
+        containersPathnameView,
+        eq(items.containerId, containersPathnameView.id),
+      )
+      .where(
+        and(eq(items.id, input.itemId), eq(items.userId, this.session.userId)),
+      )
+      .get();
+
+    return res?.pathname ?? null;
+  }
+
+  async getById(input: { itemId: number }): Promise<ItemWithPathname | null> {
+    const res = await this.db
+      .select({
+        ...getTableColumns(items),
+        pathname: containersPathnameView.pathname,
+      })
+      .from(items)
+      .innerJoin(
+        containersPathnameView,
+        eq(items.containerId, containersPathnameView.id),
+      )
+      .where(
+        and(eq(items.id, input.itemId), eq(items.userId, this.session.userId)),
+      )
+      .get();
+    return res ?? null;
+  }
+
+  async getAll(): Promise<ItemWithPathname[]> {
+    return await this.db
+      .select({
+        ...getTableColumns(items),
+        pathname: containersPathnameView.pathname,
+      })
+      .from(items)
+      .innerJoin(
+        containersPathnameView,
+        eq(items.containerId, containersPathnameView.id),
+      )
+      .where(eq(items.userId, this.session.userId));
   }
 
   async update(input: {
@@ -107,52 +160,17 @@ export default class ItemsRepository {
           count: input.count ?? item.count,
         })
         .returning();
+
       const newItem = res[0];
 
       if (!newItem) {
         return null;
       }
 
-      const pathname = await tx
-        .select()
-        .from(containersPathnameView)
-        .where(eq(containersPathnameView.id, newItem.containerId));
       return {
         ...newItem,
-        pathname: pathname[0]?.pathname ?? "",
+        pathname: await this.getPathname({ itemId: newItem.id }) ?? "",
       };
     });
-  }
-
-  async getById(input: { itemId: number }): Promise<ItemWithPathname | null> {
-    const res = await this.db
-      .select({
-        ...getTableColumns(items),
-        pathname: containersPathnameView.pathname,
-      })
-      .from(items)
-      .innerJoin(
-        containersPathnameView,
-        eq(items.containerId, containersPathnameView.id),
-      )
-      .where(
-        and(eq(items.id, input.itemId), eq(items.userId, this.session.userId)),
-      )
-      .get();
-    return res ?? null;
-  }
-
-  async getAll(): Promise<ItemWithPathname[]> {
-    return await this.db
-      .select({
-        ...getTableColumns(items),
-        pathname: containersPathnameView.pathname,
-      })
-      .from(items)
-      .innerJoin(
-        containersPathnameView,
-        eq(items.containerId, containersPathnameView.id),
-      )
-      .where(eq(items.userId, this.session.userId));
   }
 }

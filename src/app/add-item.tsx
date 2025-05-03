@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
 
 // Define the form schema with Zod
 const formSchema = z.object({
@@ -47,11 +48,9 @@ type FormValues = z.infer<typeof formSchema>;
 export const AddItemForm = ({
   isOpen,
   onClose,
-  onSuccess,
 }: {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess?: () => void;
 }) => {
   const utils = api.useUtils();
   const [openPopover, setOpenPopover] = useState(false);
@@ -92,10 +91,10 @@ export const AddItemForm = ({
       void utils.items.getAll.invalidate();
       onClose();
       form.reset();
-      onSuccess?.();
+      toast.success("Item created successfully!");
     },
-    onError: (error) => {
-      console.error("Error creating item:", error);
+    onError: () => {
+      toast.error("Error creating item");
       form.setError("root", { 
         message: "Failed to create item. Please try again." 
       });

@@ -6,6 +6,7 @@ import { Fira_Mono } from "next/font/google";
 import { TRPCReactProvider } from "@/trpc/react";
 import { NavBar } from "@/components/nav-bar";
 import { cn } from "@/lib/utils";
+import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
   title: "TIAB",
@@ -45,6 +46,7 @@ export default function RootLayout({
             </main>
           </div>
         </TRPCReactProvider>
+        <Toaster />
       </body>
     </html>
   );

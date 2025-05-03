@@ -32,6 +32,7 @@ import {
   type Path,
   type PathValue,
 } from "react-hook-form";
+import { useRandomNameGenerator } from "@/hooks/use-random-name";
 
 type ContainerFieldValues = FieldValues & {
   container: string;
@@ -70,9 +71,12 @@ export function ContainerSelect<TFieldValues extends ContainerFieldValues>({
       },
     );
 
+  const { randomName, regenerate } = useRandomNameGenerator();
+
   const handleCommandSelect = useCallback(
     (value: string) => {
       const curr: string = getValues(name);
+      regenerate();
       // we are in the root container
       if (curr === "/") {
         setValue(
@@ -111,7 +115,7 @@ export function ContainerSelect<TFieldValues extends ContainerFieldValues>({
       );
       return;
     },
-    [getValues, name, setValue],
+    [getValues, name, setValue, regenerate],
   );
 
   const handleCommandValueChange = useCallback(
@@ -162,6 +166,7 @@ export function ContainerSelect<TFieldValues extends ContainerFieldValues>({
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       // if we have no search query and we press backspace, we want to go up a level
       if (e.key === "Backspace" && e.currentTarget.value.length === 0) {
+        regenerate();
         const curr: string = getValues(name);
         const segments = curr.trim().split("/").filter(Boolean);
         segments.pop();
@@ -179,13 +184,21 @@ export function ContainerSelect<TFieldValues extends ContainerFieldValues>({
           >,
         );
         return;
-      } else if (e.key === "Tab" && onTabPress) {
+      }
+
+      if (e.key === "Tab" && onTabPress) {
         setOpenPopover(false);
         e.preventDefault();
         onTabPress();
+        return;
+      }
+
+      if (e.key === "/") {
+        regenerate();
+        return;
       }
     },
-    [getValues, name, onTabPress, setValue],
+    [getValues, name, onTabPress, setValue, regenerate],
   );
 
   return (
@@ -247,6 +260,14 @@ export function ContainerSelect<TFieldValues extends ContainerFieldValues>({
                         {isLoading ? "Loading..." : "Type to search"}
                       </CommandItem>
                     )}
+                    <CommandItem
+                      value={randomName}
+                      onSelect={handleCommandSelect}
+                      className="flex items-center gap-2"
+                    >
+                      <FolderIcon className="h-4 w-4" />
+                      <span>{randomName}</span>
+                    </CommandItem>
                   </CommandGroup>
                 </CommandList>
               </Command>

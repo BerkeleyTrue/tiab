@@ -1,8 +1,14 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
 import { type DirectoryNode } from "@/server/db/schema";
+import { faker } from "@faker-js/faker";
 
 export const containerRouter = createTRPCRouter({
+  getRandomName: publicProcedure.query(async () => {
+    const name = `${faker.color.human().replace(/\s/g, "_")}_${faker.word.noun()}`;
+    return name;
+  }),
+
   create: publicProcedure
     .input(
       z.object({

@@ -71,7 +71,11 @@ export function ContainerSelect<TFieldValues extends ContainerFieldValues>({
       },
     );
 
-  const { randomName, regenerate } = useRandomNameGenerator();
+  const {
+    randomName,
+    regenerate,
+    isLoading: isRandomNameLoading,
+  } = useRandomNameGenerator();
 
   const handleCommandSelect = useCallback(
     (value: string) => {
@@ -265,14 +269,16 @@ export function ContainerSelect<TFieldValues extends ContainerFieldValues>({
                         {isLoading ? "Loading..." : "Type to search"}
                       </CommandItem>
                     )}
-                    <CommandItem
-                      value={randomName}
-                      onSelect={handleCommandSelect}
-                      className="flex items-center gap-2"
-                    >
-                      <FolderIcon className="h-4 w-4" />
-                      <span>{randomName}</span>
-                    </CommandItem>
+                    {!isRandomNameLoading && (
+                      <CommandItem
+                        value={randomName}
+                        onSelect={handleCommandSelect}
+                        className="flex items-center gap-2"
+                      >
+                        <FolderIcon className="h-4 w-4" />
+                        <span>{randomName}</span>
+                      </CommandItem>
+                    )}
                   </CommandGroup>
                 </CommandList>
               </Command>

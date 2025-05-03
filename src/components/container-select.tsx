@@ -120,6 +120,10 @@ export function ContainerSelect<TFieldValues extends ContainerFieldValues>({
 
   const handleCommandValueChange = useCallback(
     (value: string) => {
+      if (value === "/") {
+        return;
+      }
+
       const curr: string = getValues(name);
       // we are at the root container
       if (curr === "/") {
@@ -164,8 +168,9 @@ export function ContainerSelect<TFieldValues extends ContainerFieldValues>({
 
   const handleCommandKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
+      const value = e.currentTarget.value;
       // if we have no search query and we press backspace, we want to go up a level
-      if (e.key === "Backspace" && e.currentTarget.value.length === 0) {
+      if (e.key === "Backspace" && value.length === 0) {
         regenerate();
         const curr: string = getValues(name);
         const segments = curr.trim().split("/").filter(Boolean);
@@ -193,7 +198,7 @@ export function ContainerSelect<TFieldValues extends ContainerFieldValues>({
         return;
       }
 
-      if (e.key === "/") {
+      if (e.key === "/" && value.length !== 0 && value !== "/") {
         regenerate();
         return;
       }

@@ -37,7 +37,9 @@
 
           buildPhase = ''
             runHook preBuild
-            SKIP_ENV_VALIDATION=true pnpm run build
+            # dummy database URL for build
+            export DATABASE_URL="file:./db.sqlite"
+            pnpm run build
             runHook postBuild
           '';
 
@@ -45,7 +47,6 @@
             runHook preInstall
             mkdir -p $out
             cp -r .next $out/
-            cp -r public $out/
             cp -r node_modules $out/
             cp package.json $out/
             

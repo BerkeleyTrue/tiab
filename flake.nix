@@ -52,11 +52,13 @@
             
             # Create a simple wrapper script to start the application
             mkdir -p $out/bin
+
             cat > $out/bin/${name} << EOF
-              #!/bin/sh
-              cd $out
-              exec ${nodejs}/bin/node $out/node_modules/next/dist/bin/next start
+            #!/bin/sh
+            cd $out
+            exec ${nodejs}/bin/node $out/node_modules/next/dist/bin/next start
             EOF
+
             chmod +x $out/bin/${name}
             runHook postInstall
           '';

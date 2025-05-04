@@ -43,7 +43,6 @@
             runHook preBuild
             # dummy database URL for build
             export DATABASE_URL="file:./db.sqlite"
-            pnpm run build
             runHook postBuild
           '';
 
@@ -60,9 +59,8 @@
             mkdir -p $out/bin
 
             cat > $out/bin/${name} << EOF
-            #!/bin/sh
+            #!/bin/env bash
             cd $out
-            exec ${nodejs}/bin/npm run db:migrate
             exec ${nodejs}/bin/node $out/node_modules/next/dist/bin/next start
             EOF
 

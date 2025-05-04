@@ -48,6 +48,7 @@
             mkdir -p $out
             cp -r .next $out/
             cp -r node_modules $out/
+            cp -r drizzle $out/
             cp package.json $out/
             
             # Create a simple wrapper script to start the application

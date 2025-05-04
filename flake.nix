@@ -43,6 +43,7 @@
             runHook preBuild
             # dummy database URL for build
             export DATABASE_URL="file:./db.sqlite"
+            pnpm run build
             runHook postBuild
           '';
 

@@ -1,7 +1,7 @@
 import "@/styles/globals.css";
 
 import { type Metadata } from "next";
-import { Fira_Mono } from "next/font/google";
+import localFont from "next/font/local";
 
 import { TRPCReactProvider } from "@/trpc/react";
 import { NavBar } from "@/components/nav-bar";
@@ -14,9 +14,24 @@ export const metadata: Metadata = {
   icons: [{ rel: "icon", url: "/favicon.ico" }],
 };
 
-const font = Fira_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500", "700"],
+const font = localFont({
+  src: [
+    {
+      path: "./fonts/FiraCode-Regular.ttf",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "./fonts/FiraCode-Medium.ttf",
+      weight: "500",
+      style: "normal",
+    },
+    {
+      path: "./fonts/FiraCode-Bold.ttf",
+      weight: "700",
+      style: "normal",
+    },
+  ],
 });
 
 export default function RootLayout({
@@ -37,8 +52,8 @@ export default function RootLayout({
             >
               <div
                 className={cn(
-                  "container flex h-full flex-col items-center gap-12 md:justify-center ", 
-                  "md:px-4  py-1 md:py-16",
+                  "container flex h-full flex-col items-center gap-12 md:justify-center",
+                  "py-1 md:px-4 md:py-16",
                 )}
               >
                 {children}

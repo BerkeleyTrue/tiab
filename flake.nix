@@ -37,7 +37,7 @@
 
           buildPhase = ''
             runHook preBuild
-            pnpm run build
+            SKIP_ENV_VALIDATION=true pnpm run build
             runHook postBuild
           '';
 

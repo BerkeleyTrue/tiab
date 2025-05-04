@@ -57,6 +57,7 @@
             cat > $out/bin/${name} << EOF
             #!/bin/sh
             cd $out
+            exec ${pnpm}/bin/pnpm run db:migrate
             exec ${nodejs}/bin/node $out/node_modules/next/dist/bin/next start
             EOF
 

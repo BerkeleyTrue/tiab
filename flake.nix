@@ -35,6 +35,10 @@
             pnpm.configHook
           ];
 
+          buildInputs = [
+            nodejs
+          ];
+
           buildPhase = ''
             runHook preBuild
             # dummy database URL for build
@@ -50,6 +54,7 @@
             cp -r node_modules $out/
             cp -r drizzle $out/
             cp package.json $out/
+            cp pnpm-lock.yaml $out/
             
             # Create a simple wrapper script to start the application
             mkdir -p $out/bin
@@ -57,7 +62,7 @@
             cat > $out/bin/${name} << EOF
             #!/bin/sh
             cd $out
-            exec ${pnpm}/bin/pnpm run db:migrate
+            exec ${nodejs}/bin/npm run db:migrate
             exec ${nodejs}/bin/node $out/node_modules/next/dist/bin/next start
             EOF
 

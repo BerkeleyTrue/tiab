@@ -1,6 +1,5 @@
 import { createClient, type Client } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
-import { migrate } from "drizzle-orm/libsql/migrator";
 
 import { env } from "@/env";
 import * as schema from "./schema";
@@ -19,10 +18,6 @@ export const client =
 if (env.NODE_ENV !== "production") globalForDb.client = client;
 
 export const db = drizzle(client, { schema });
-
-if (env.NODE_ENV === "production" && env.DATABASE_URL) {
-  await migrate(db, { migrationsFolder: "./drizzle" })
-};
 
 export type Db = typeof db;
 export type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];

@@ -39,6 +39,7 @@ import { format } from "date-fns";
 import { useBoolean } from "@/hooks/use-boolean";
 import { Edit } from "lucide-react";
 import Link from "next/link";
+import { pluralize } from "@/lib/utils";
 
 export const ItemsTable = ({
   initItems,
@@ -135,7 +136,9 @@ export const ItemsTable = ({
               className="max-w-sm"
             />
           </CardTitle>
-          <CardDescription className="text-right">{items.length} items found.</CardDescription>
+          <CardDescription className="text-right">
+            {items.length} {pluralize(items.length, "item")} found.
+          </CardDescription>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">

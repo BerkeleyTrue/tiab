@@ -14,13 +14,25 @@ import {
   Bone,
 } from "lucide-react";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
-import { Card, CardTitle, CardHeader, CardContent } from "@/components/ui/card";
+import { cn, pluralize } from "@/lib/utils";
+import {
+  Card,
+  CardTitle,
+  CardHeader,
+  CardContent,
+  CardDescription,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 type TreeNodeProps = {
   node: DirectoryNode;
   level: number;
+};
+
+const levelToPadding = (level: number): number => {
+  return level * 22;
 };
 
 const TreeNode = ({ node, level }: TreeNodeProps) => {
@@ -39,8 +51,11 @@ const TreeNode = ({ node, level }: TreeNodeProps) => {
       }, 0);
     }
 
-    return (node.items?.length ?? 0) + getChildrenItemCount(node.children);
-  }, [node]);
+    return (
+      (node.items?.length ?? 0) +
+      (isExpanded ? 0 : getChildrenItemCount(node.children))
+    );
+  }, [node, isExpanded]);
 
   const toggleExpand = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -54,7 +69,7 @@ const TreeNode = ({ node, level }: TreeNodeProps) => {
           "flex cursor-pointer items-center rounded-md px-2 py-1",
           level === 0 && "font-semibold",
         )}
-        style={{ paddingLeft: `${level * 16 + 8}px` }}
+        style={{ paddingLeft: `${levelToPadding(level)}px` }}
       >
         <div className="flex items-center" onClick={toggleExpand}>
           {hasChildren ? (
@@ -64,19 +79,18 @@ const TreeNode = ({ node, level }: TreeNodeProps) => {
               <ChevronRight className="mr-1 h-4 w-4" />
             )
           ) : (
+            /* Placeholder for icon when no children */
             <span className="w-5" />
           )}
 
-          {isExpanded ? (
+          {isExpanded || !hasChildren ? (
             <PackageOpen className="mr-2 h-5 w-5" />
-          ) : hasChildren ? (
-            <Package className="mr-2 h-5 w-5" />
           ) : (
-            <PackageOpen className="mr-2 h-5 w-5" />
+            <Package className="mr-2 h-5 w-5" />
           )}
         </div>
 
-        <div className="flex-1 truncate">
+        <div className="flex-1 truncate" onClick={toggleExpand}>
           {node.parent.path}
         </div>
 
@@ -98,14 +112,6 @@ const TreeNode = ({ node, level }: TreeNodeProps) => {
 
       {isExpanded && (
         <>
-          {hasItems && (
-            <div className="ml-8">
-              {node.items?.map((item) => (
-                <ItemRow key={item.id} item={item} level={level + 1} />
-              ))}
-            </div>
-          )}
-
           {hasChildren &&
             node.children.map((child, index) => (
               <TreeNode
@@ -114,6 +120,14 @@ const TreeNode = ({ node, level }: TreeNodeProps) => {
                 level={level + 1}
               />
             ))}
+
+          {hasItems && (
+            <div className="w-full">
+              {node.items?.map((item) => (
+                <ItemRow key={item.id} item={item} level={level + 1} />
+              ))}
+            </div>
+          )}
         </>
       )}
     </div>
@@ -124,9 +138,10 @@ const ItemRow = ({ item, level }: { item: Item; level: number }) => {
   return (
     <Link
       className="flex items-center rounded-md px-2 py-1"
-      style={{ paddingLeft: `${level * 16 + 8}px` }}
+      style={{ paddingLeft: `${levelToPadding(level)}px` }}
       href={`/items/${item.id}`}
     >
+      <span className="w-5" />
       <Bone className="mr-2 h-4 w-4" />
       <span className="truncate">{item.name}</span>
       {(item.count ?? 0) > 1 && (
@@ -140,9 +155,13 @@ const ItemRow = ({ item, level }: { item: Item; level: number }) => {
 
 export const ContainersTable = ({ tree }: { tree: DirectoryNode }) => {
   const utils = api.useUtils();
+  const router = useRouter();
 
   useEffect(() => {
-    utils.containers.getDirectoryTree.setData({ containerId: tree.parent.id }, tree);
+    utils.containers.getDirectoryTree.setData(
+      { containerId: tree.parent.id },
+      tree,
+    );
   }, [tree, utils.containers.getDirectoryTree]);
 
   const { data = tree, isLoading } = api.containers.getDirectoryTree.useQuery({
@@ -154,9 +173,34 @@ export const ContainersTable = ({ tree }: { tree: DirectoryNode }) => {
   }
 
   return (
-    <Card className="mx-auto w-full max-w-4xl p-4">
+    <Card className="mx-auto w-full max-w-4xl md:p-4">
       <CardHeader>
-        <CardTitle>Containers</CardTitle>
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <CardTitle className="flex items-center text-2xl">
+              Containers
+            </CardTitle>
+            <CardDescription>
+              {data.parent.path == "/" ? "Root" : data.parent.path} -
+              {data.children.length > 0
+                ? ` ${data.children.length} ${pluralize(data.children.length, "container")}`
+                : ""}
+              {data?.items?.length
+                ? ` ${data.items?.length ?? 0} ${pluralize(data.items.length ?? 0, "item")}`
+                : ""}
+            </CardDescription>
+          </div>
+
+          {data.parent.path !== "/" && (
+            <Button
+              variant="secondary"
+              className="mt-2"
+              onClick={() => router.back()}
+            >
+              Back
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         <TreeNode node={data} level={0} />

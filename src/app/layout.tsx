@@ -52,7 +52,7 @@ export default function RootLayout({
             >
               <div
                 className={cn(
-                  "container flex h-full flex-col items-center gap-12 md:justify-center",
+                  "container flex h-full flex-col items-center gap-12 justify-center",
                   "py-1 md:px-4 md:py-16",
                 )}
               >

@@ -11,6 +11,7 @@ import {
   Candy,
   PackageOpen,
   SquareArrowOutUpRight,
+  Bone,
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -126,7 +127,7 @@ const ItemRow = ({ item, level }: { item: Item; level: number }) => {
       style={{ paddingLeft: `${level * 16 + 8}px` }}
       href={`/items/${item.id}`}
     >
-      <Package className="mr-2 h-4 w-4" />
+      <Bone className="mr-2 h-4 w-4" />
       <span className="truncate">{item.name}</span>
       {(item.count ?? 0) > 1 && (
         <span className="ml-2 rounded-full px-2 py-0.5 text-xs">

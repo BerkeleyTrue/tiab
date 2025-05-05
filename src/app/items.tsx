@@ -135,11 +135,7 @@ export const ItemsTable = ({
               className="max-w-sm"
             />
           </CardTitle>
-          <CardDescription>
-            <p className="text-muted-foreground text-sm">
-              {items.length} items found.
-            </p>
-          </CardDescription>
+          <CardDescription className="text-right">{items.length} items found.</CardDescription>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">

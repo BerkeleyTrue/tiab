@@ -1,0 +1,1 @@
+ALTER TABLE `tiab_item` ADD `isPublic` integer DEFAULT false;

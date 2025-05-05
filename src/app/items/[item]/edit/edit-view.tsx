@@ -28,12 +28,14 @@ import {
 import type { ItemWithPathname } from "@/server/db/schema";
 import { toast } from "sonner";
 import { ContainerSelect } from "@/components/container-select";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().optional(),
   count: z.number().int().min(1, "Count must be at least 1"),
   container: z.string().min(1, "Container is required"),
+  isPublic: z.boolean().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -50,6 +52,7 @@ export const EditItemForm = ({ item }: { item: ItemWithPathname }) => {
       description: item.description ?? "",
       count: item.count ?? 1,
       container: item.pathname,
+      isPublic: item.isPublic ?? false,
     },
   });
 
@@ -80,12 +83,12 @@ export const EditItemForm = ({ item }: { item: ItemWithPathname }) => {
   );
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Edit Item</CardTitle>
-      </CardHeader>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)}>
+        <Card>
+          <CardHeader>
+            <CardTitle>Edit Item</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-4">
             <ContainerSelect
               control={form.control}
@@ -164,6 +167,29 @@ export const EditItemForm = ({ item }: { item: ItemWithPathname }) => {
                 </FormItem>
               )}
             />
+            <FormField
+              control={form.control}
+              name="isPublic"
+              render={({ field }) => (
+                <FormItem
+                  className="flex items-center space-x-2"
+                  onClick={() => field.onChange(!field.value)}
+                >
+                  <FormControl>
+                    <Checkbox
+                      id="isPublic"
+                      className="h-4 w-4"
+                      checked={field.value}
+                    />
+                  </FormControl>
+                  <FormLabel>Public</FormLabel>
+                  <FormDescription>
+                    Make this item visible to other users.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </CardContent>
           <CardFooter className="flex justify-between">
             <Button
@@ -180,8 +206,8 @@ export const EditItemForm = ({ item }: { item: ItemWithPathname }) => {
               {updateMutation.isPending ? "Saving..." : "Save Changes"}
             </Button>
           </CardFooter>
-        </form>
-      </Form>
-    </Card>
+        </Card>
+      </form>
+    </Form>
   );
 };

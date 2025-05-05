@@ -12,6 +12,7 @@ import { useForm } from "react-hook-form";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -21,6 +22,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { ContainerSelect } from "@/components/container-select";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // Define the form schema with Zod
 const formSchema = z.object({
@@ -28,6 +30,7 @@ const formSchema = z.object({
   description: z.string().optional(),
   count: z.number().min(1, { message: "Count must be at least 1" }),
   container: z.string().min(1, { message: "Container is required" }),
+  isPublic: z.boolean().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -50,6 +53,7 @@ export const AddItemForm = ({
       description: "",
       count: 1,
       container: "/",
+      isPublic: false,
     },
   });
 
@@ -145,6 +149,29 @@ export const AddItemForm = ({
                       onChange={(e) => field.onChange(Number(e.target.value))}
                     />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="isPublic"
+              render={({ field }) => (
+                <FormItem
+                  className="flex items-center space-x-2"
+                  onClick={() => field.onChange(!field.value)}
+                >
+                  <FormControl>
+                    <Checkbox
+                      id="isPublic"
+                      className="h-4 w-4"
+                      checked={field.value}
+                    />
+                  </FormControl>
+                  <FormLabel>Public</FormLabel>
+                  <FormDescription>
+                    Make this item visible to other users.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

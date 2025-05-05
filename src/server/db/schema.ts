@@ -84,6 +84,7 @@ export const items = createTable(
     count: d.integer({ mode: "number" }).default(1),
     description: d.text(),
     containerId: d.integer({ mode: "number" }).notNull(),
+    isPublic: d.integer({ mode: "boolean" }).default(false), // 0 = private, 1 = public
     createdAt: d
       .text()
       .notNull()

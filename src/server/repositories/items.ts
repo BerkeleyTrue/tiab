@@ -70,7 +70,7 @@ export default class ItemsRepository {
 
       return {
         ...newItem,
-        pathname: await this.getPathname({ itemId: newItem.id }) ?? "",
+        pathname: (await this.getPathname({ itemId: newItem.id })) ?? "",
       };
     });
   }
@@ -151,14 +151,20 @@ export default class ItemsRepository {
       }
 
       const res = await tx
-        .insert(items)
-        .values({
+        .update(items)
+        .set({
           name: input.name ?? item.name,
           userId: this.session.userId,
           containerId: containerBase.id,
           description: input.description ?? item.description,
           count: input.count ?? item.count,
         })
+        .where(
+          and(
+            eq(items.id, input.itemId),
+            eq(items.userId, this.session.userId),
+          ),
+        )
         .returning();
 
       const newItem = res[0];
@@ -169,7 +175,7 @@ export default class ItemsRepository {
 
       return {
         ...newItem,
-        pathname: await this.getPathname({ itemId: newItem.id }) ?? "",
+        pathname: (await this.getPathname({ itemId: newItem.id })) ?? "",
       };
     });
   }

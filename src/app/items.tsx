@@ -65,22 +65,18 @@ export const ItemsTable = ({
     {
       accessorKey: "name",
       header: "Name",
-      cell: ({ row }) => <div>{row.getValue("name")}</div>,
     },
     {
       accessorKey: "description",
       header: "Description",
-      cell: ({ row }) => <div>{row.getValue("description") ?? "-"}</div>,
     },
     {
       accessorKey: "count",
       header: "Count",
-      cell: ({ row }) => <div>{row.getValue("count")}</div>,
     },
     {
       accessorKey: "pathname",
       header: "Container",
-      cell: ({ row }) => <div>{row.getValue("pathname")}</div>,
     },
     {
       accessorKey: "createdAt",
@@ -121,7 +117,7 @@ export const ItemsTable = ({
   }
 
   return (
-    <Card className="w-full max-w-2xl">
+    <Card className="w-full">
       <CardHeader className="">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center justify-between">
@@ -148,7 +144,7 @@ export const ItemsTable = ({
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id}>
+                    <TableHead key={header.id} className="max-w-[150px]">
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -168,7 +164,7 @@ export const ItemsTable = ({
                     data-state={row.getIsSelected() && "selected"}
                   >
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
+                      <TableCell key={cell.id} className="max-w-[150px] overflow-ellipsis overflow-hidden">
                         {flexRender(
                           cell.column.columnDef.cell,
                           cell.getContext(),

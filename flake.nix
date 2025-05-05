@@ -1,5 +1,5 @@
 {
-  description = "tiab - Thing in a Box - A Next.js application";
+  description = "tiab - Trapped In A Box - A personal inventory system";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -82,7 +82,7 @@
         # App definition for running with `nix run`
         apps.default = {
           type = "app";
-          description = "Tiab application - A personal storage solution";
+          description = "Tiab application - A personal inventory solution";
           program = "${self.packages.${system}.default}/bin/${name}";
         };
       });

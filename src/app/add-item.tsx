@@ -110,6 +110,9 @@ export const AddItemForm = ({
                       placeholder="Item name"
                       {...field}
                       ref={nameInputRef}
+                      onChange={(e) => {
+                        field.onChange(e.target.value.replace(/\s+/g, "_"));
+                      }}
                     />
                   </FormControl>
                   <FormMessage />

@@ -124,6 +124,7 @@ export function ContainerSelect<TFieldValues extends ContainerFieldValues>({
 
   const handleCommandValueChange = useCallback(
     (value: string) => {
+      value = value.replace(/\s+/g, "_");
       if (value === "/") {
         return;
       }

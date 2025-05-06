@@ -16,8 +16,8 @@ export const itemsRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       return ctx.repos.items.create({
-        name: input.name,
-        container: input.container,
+        name: input.name.trim().toLowerCase().replace(/\s+/g, "_"),
+        container: input.container.trim().toLowerCase().replace(/\s+/g, "_"),
         description: input.description,
         count: input.count,
       });

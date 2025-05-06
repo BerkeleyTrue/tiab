@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { api } from "@/trpc/react";
-import { useRef, useEffect } from "react";
+import { useRef, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import {
   Form,
@@ -57,18 +57,15 @@ export const AddItemForm = ({
     },
   });
 
-  // Reset form when dialog closes
-  useEffect(() => {
-    if (!isOpen) {
-      form.reset();
-    }
-  }, [isOpen, form]);
+  const handleClose = useCallback(() => {
+    onClose();
+    form.reset();
+  }, [onClose, form]);
 
   const mutate = api.items.create.useMutation({
     onSuccess: () => {
       void utils.items.getAll.invalidate();
-      onClose();
-      form.reset();
+      handleClose();
       toast.success("Item created successfully!");
     },
     onError: () => {
@@ -80,7 +77,7 @@ export const AddItemForm = ({
   });
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add New Item</DialogTitle>
@@ -157,15 +154,14 @@ export const AddItemForm = ({
               control={form.control}
               name="isPublic"
               render={({ field }) => (
-                <FormItem
-                  className="flex items-center space-x-2"
-                  onClick={() => field.onChange(!field.value)}
-                >
+                <FormItem className="flex items-center space-x-2">
                   <FormControl>
                     <Checkbox
-                      id="isPublic"
+                      id={field.name}
                       className="h-4 w-4"
+                      name={field.name}
                       checked={field.value}
+                      onCheckedChange={field.onChange}
                     />
                   </FormControl>
                   <FormLabel>Public</FormLabel>

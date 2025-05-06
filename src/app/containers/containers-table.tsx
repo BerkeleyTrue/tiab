@@ -25,6 +25,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { ItemsTable } from "../items";
 
 type TreeNodeProps = {
   node: DirectoryNode;
@@ -39,6 +40,7 @@ const TreeNode = ({ node, level }: TreeNodeProps) => {
   const [isExpanded, setIsExpanded] = useState(level === 0);
   const hasChildren = node.children && node.children.length > 0;
   const hasItems = node.items && node.items.length > 0;
+  const isRoot = level === 0;
 
   const itemCount = useMemo(() => {
     function getChildrenItemCount(children: DirectoryNode[]): number {
@@ -121,7 +123,7 @@ const TreeNode = ({ node, level }: TreeNodeProps) => {
               />
             ))}
 
-          {hasItems && (
+          {!isRoot && hasItems && (
             <div className="w-full">
               {node.items?.map((item) => (
                 <ItemRow key={item.id} item={item} level={level + 1} />
@@ -162,7 +164,13 @@ export const ContainersTable = ({ tree }: { tree: DirectoryNode }) => {
       { containerId: tree.parent.id },
       tree,
     );
-  }, [tree, utils.containers.getDirectoryTree]);
+    utils.items.getAll.setData(
+      {
+        containerId: tree.parent.id,
+      },
+      tree.items ?? [],
+    );
+  }, [tree, utils]);
 
   const { data = tree, isLoading } = api.containers.getDirectoryTree.useQuery({
     containerId: tree.parent.id,
@@ -173,38 +181,43 @@ export const ContainersTable = ({ tree }: { tree: DirectoryNode }) => {
   }
 
   return (
-    <Card className="mx-auto w-full max-w-4xl md:p-4">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex-1">
-            <CardTitle className="flex items-center text-2xl">
-              Containers
-            </CardTitle>
-            <CardDescription>
-              {data.parent.path == "/" ? "Root" : data.parent.path} -
-              {data.children.length > 0
-                ? ` ${data.children.length} ${pluralize(data.children.length, "container")}`
-                : ""}
-              {data?.items?.length
-                ? ` ${data.items?.length ?? 0} ${pluralize(data.items.length ?? 0, "item")}`
-                : ""}
-            </CardDescription>
-          </div>
+    <>
+      <Card className="mx-auto w-full max-w-4xl md:p-4">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <CardTitle className="flex items-center text-2xl">
+                Containers
+              </CardTitle>
+              <CardDescription>
+                {data.parent.path == "/" ? "Root" : data.parent.path} -
+                {data.children.length > 0
+                  ? ` ${data.children.length} ${pluralize(data.children.length, "container")}`
+                  : ""}
+                {data?.items?.length
+                  ? ` ${data.items?.length ?? 0} ${pluralize(data.items.length ?? 0, "item")}`
+                  : ""}
+              </CardDescription>
+            </div>
 
-          {data.parent.path !== "/" && (
-            <Button
-              variant="secondary"
-              className="mt-2"
-              onClick={() => router.back()}
-            >
-              Back
-            </Button>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent>
-        <TreeNode node={data} level={0} />
-      </CardContent>
-    </Card>
+            {data.parent.path !== "/" && (
+              <Button
+                variant="secondary"
+                className="mt-2"
+                onClick={() => router.back()}
+              >
+                Back
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          <TreeNode node={data} level={0} />
+        </CardContent>
+      </Card>
+      {data.items && (
+        <ItemsTable initItems={data.items} containerId={data.parent.id} />
+      )}
+    </>
   );
 };

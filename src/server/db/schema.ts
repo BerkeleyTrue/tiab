@@ -158,6 +158,6 @@ ORDER BY pathname;
 
 export type DirectoryNode = {
   parent: Container;
-  items?: Item[];
+  items?: ItemWithPathname[];
   children: DirectoryNode[];
 };

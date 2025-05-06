@@ -1,10 +1,11 @@
 import {
   containers,
+  containersPathnameView,
   items,
   type Container,
   type DirectoryNode,
 } from "@/server/db/schema";
-import { and, like, eq } from "drizzle-orm";
+import { and, like, eq, getTableColumns } from "drizzle-orm";
 import type { Db, Tx } from "@/server/db";
 
 export async function getDirectoryTree(
@@ -27,8 +28,15 @@ export async function getDirectoryTree(
     .all();
 
   res.items = await db
-    .select()
+    .select({
+      ...getTableColumns(items),
+      pathname: containersPathnameView.pathname,
+    })
     .from(items)
+    .innerJoin(
+      containersPathnameView,
+      eq(items.containerId, containersPathnameView.id),
+    )
     .where(and(eq(items.containerId, parent.id), eq(items.userId, userId)))
     .all();
 
@@ -112,7 +120,6 @@ export class ContainerRepository {
   }
 
   async ensurePathname(input: { pathname: string }): Promise<Container | null> {
-
     // Process container path and create container hierarchy
     const segments = input.pathname
       .split("/")

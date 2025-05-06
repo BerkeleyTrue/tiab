@@ -43,8 +43,10 @@ import { pluralize } from "@/lib/utils";
 
 export const ItemsTable = ({
   initItems,
+  containerId,
 }: {
   initItems: ItemWithPathname[];
+  containerId?: number;
 }) => {
   const utils = api.useUtils();
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -56,10 +58,14 @@ export const ItemsTable = ({
   } = useBoolean();
 
   useEffect(() => {
-    utils.items.getAll.setData(undefined, initItems);
-  }, [initItems, utils.items.getAll]);
+    utils.items.getAll.setData({
+      containerId,
+    }, initItems);
+  }, [initItems, containerId, utils.items.getAll]);
 
-  const { data: items = initItems, isLoading } = api.items.getAll.useQuery();
+  const { data: items = initItems, isLoading } = api.items.getAll.useQuery({
+    containerId
+  });
 
   const columns: ColumnDef<ItemWithPathname>[] = [
     {

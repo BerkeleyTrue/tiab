@@ -216,7 +216,7 @@ export const ContainersTable = ({ tree }: { tree: DirectoryNode }) => {
         </CardContent>
       </Card>
       {data.items && (
-        <ItemsTable initItems={data.items} containerId={data.parent.id} />
+        <ItemsTable initItems={data.items} initContainer={data.parent} />
       )}
     </>
   );

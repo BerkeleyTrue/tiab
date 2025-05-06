@@ -80,6 +80,21 @@ export class ContainerRepository {
     return res[0] ?? null;
   }
 
+  async getById(input: { id: number }): Promise<Container | null> {
+    const res = await this.db
+      .select()
+      .from(containers)
+      .where(
+        and(
+          eq(containers.id, input.id),
+          eq(containers.userId, this.session.userId),
+        ),
+      )
+      .get();
+
+    return res ?? null;
+  }
+
   async getByPath(input: {
     path: string;
     parent: string;

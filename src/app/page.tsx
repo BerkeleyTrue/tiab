@@ -3,7 +3,7 @@ import { ItemsTable } from "./items";
 import { Card, CardContent } from "@/components/ui/card";
 
 export default async function Home() {
-  const items = await api.items.getAll();
+  const items = await api.items.getAll({});
 
   return (
     <>

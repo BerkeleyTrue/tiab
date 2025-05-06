@@ -25,9 +25,10 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { ItemWithPathname } from "@/server/db/schema";
+import type { Container, ItemWithPathname } from "@/server/db/schema";
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardFooter,
@@ -43,10 +44,10 @@ import { pluralize } from "@/lib/utils";
 
 export const ItemsTable = ({
   initItems,
-  containerId,
+  initContainer,
 }: {
   initItems: ItemWithPathname[];
-  containerId?: number;
+  initContainer?: Container;
 }) => {
   const utils = api.useUtils();
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -58,13 +59,25 @@ export const ItemsTable = ({
   } = useBoolean();
 
   useEffect(() => {
-    utils.items.getAll.setData({
-      containerId,
-    }, initItems);
-  }, [initItems, containerId, utils.items.getAll]);
+    utils.items.getAll.setData(
+      {
+        containerId: initContainer?.id,
+      },
+      initItems,
+    );
+  }, [initItems, initContainer?.id, utils.items.getAll]);
+
+  const { data: container = initContainer } = api.containers.getById.useQuery(
+    {
+      id: initContainer?.id ?? 0,
+    },
+    {
+      enabled: !!initContainer?.id,
+    },
+  );
 
   const { data: items = initItems, isLoading } = api.items.getAll.useQuery({
-    containerId
+    containerId: container?.id,
   });
 
   const columns: ColumnDef<ItemWithPathname>[] = [
@@ -125,23 +138,22 @@ export const ItemsTable = ({
   return (
     <Card className="w-full">
       <CardHeader className="">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center justify-between">
-            <Input
-              placeholder="Filter by name..."
-              value={
-                (table.getColumn("name")?.getFilterValue() as string) ?? ""
-              }
-              onChange={(event) =>
-                table.getColumn("name")?.setFilterValue(event.target.value)
-              }
-              className="max-w-sm"
-            />
-          </CardTitle>
-          <CardDescription className="text-right">
-            {items.length} {pluralize(items.length, "item")} found.
-          </CardDescription>
-        </div>
+        <CardTitle className="capitalize">
+          {container ? `${container.path}'s items` : "All items"}
+        </CardTitle>
+        <CardDescription className="text-right">
+          {items.length} {pluralize(items.length, "item")} found.
+        </CardDescription>
+        <CardAction className="flex items-center justify-between">
+          <Input
+            placeholder="Filter by name..."
+            value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
+            onChange={(event) =>
+              table.getColumn("name")?.setFilterValue(event.target.value)
+            }
+            className="max-w-sm"
+          />
+        </CardAction>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="rounded border">
@@ -170,7 +182,10 @@ export const ItemsTable = ({
                     data-state={row.getIsSelected() && "selected"}
                   >
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id} className="max-w-[150px] overflow-ellipsis overflow-hidden">
+                      <TableCell
+                        key={cell.id}
+                        className="max-w-[150px] overflow-hidden overflow-ellipsis"
+                      >
                         {flexRender(
                           cell.column.columnDef.cell,
                           cell.getContext(),

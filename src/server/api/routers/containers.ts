@@ -20,6 +20,16 @@ export const containerRouter = createTRPCRouter({
       return await ctx.repos.containers.create(input);
     }),
 
+  getById: publicProcedure
+    .input(
+      z.object({
+        id: z.number(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      return ctx.repos.containers.getById(input);
+    }),
+
   searchContainer: publicProcedure
     .input(
       z.object({

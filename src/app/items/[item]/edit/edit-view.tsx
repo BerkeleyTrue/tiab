@@ -171,15 +171,14 @@ export const EditItemForm = ({ item }: { item: ItemWithPathname }) => {
               control={form.control}
               name="isPublic"
               render={({ field }) => (
-                <FormItem
-                  className="flex items-center space-x-2"
-                  onClick={() => field.onChange(!field.value)}
-                >
+                <FormItem className="flex items-center space-x-2">
                   <FormControl>
                     <Checkbox
-                      id="isPublic"
+                      id={field.name}
                       className="h-4 w-4"
+                      name={field.name}
                       checked={field.value}
+                      onCheckedChange={field.onChange}
                     />
                   </FormControl>
                   <FormLabel>Public</FormLabel>

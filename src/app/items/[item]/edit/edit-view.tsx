@@ -113,6 +113,9 @@ export const EditItemForm = ({ item }: { item: ItemWithPathname }) => {
                       {...field}
                       ref={nameInputRef}
                       placeholder="Item name"
+                      onChange={(e) => {
+                        field.onChange(e.target.value.replace(/\s+/g, "_"));
+                      }}
                     />
                   </FormControl>
                   <FormDescription>The name of your item</FormDescription>

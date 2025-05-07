@@ -284,6 +284,7 @@ export const ContainersTable = ({ tree }: { tree: DirectoryNode }) => {
         onClose={closeDeleteForm}
         onDelete={handleDelete}
         containerId={data.parent.id}
+        hasItems={(data.items?.length ?? 0) > 0}
       />
     </div>
   );

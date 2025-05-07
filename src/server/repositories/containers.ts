@@ -41,7 +41,13 @@ export async function getDirectoryTree(
       containersPathnameView,
       eq(items.containerId, containersPathnameView.id),
     )
-    .where(and(eq(items.containerId, parent.id), eq(items.userId, userId)))
+    .where(
+      and(
+        eq(items.containerId, parent.id),
+        eq(items.userId, userId),
+        eq(items.isDeleted, false),
+      ),
+    )
     .all();
 
   for (const child of children) {

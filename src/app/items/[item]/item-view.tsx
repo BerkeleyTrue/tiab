@@ -25,11 +25,19 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { DeleteForm } from "./delete-popup";
 import { useBoolean } from "@/hooks/use-boolean";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { api } from "@/trpc/react";
 
 export const ItemView = ({ item }: { item: ItemWithPathname }) => {
+  const utils = api.useUtils();
   const router = useRouter();
+
+  useEffect(() => {
+    void utils.items.getById.setData({ itemId: item.id }, item);
+  }, [utils, item]);
+
   const {
     value: isDeleteOpen,
     setFalse: closeDeleteForm,
@@ -38,8 +46,11 @@ export const ItemView = ({ item }: { item: ItemWithPathname }) => {
 
   const handleDelete = useCallback(() => {
     closeDeleteForm();
+    toast.success("Item deleted successfully");
     router.push(`/containers/${item.containerId}`);
-  }, [closeDeleteForm, item.containerId, router]);
+    void utils.items.getById.invalidate({ itemId: item.id });
+    void utils.items.getAll.invalidate({ containerId: item.containerId });
+  }, [closeDeleteForm, item.containerId, router, item.id, utils]);
 
   return (
     <>

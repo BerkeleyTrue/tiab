@@ -33,8 +33,6 @@ export const MoveItems = ({
   onMove: () => void;
   onClose: () => void;
 }) => {
-  const utils = api.useUtils();
-
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -44,8 +42,6 @@ export const MoveItems = ({
 
   const mutate = api.items.moveItemsToContainer.useMutation({
     onSuccess: () => {
-      void utils.containers.getDirectoryTree.invalidate({ containerId });
-      void utils.items.getAll.invalidate({ containerId });
       onMove();
     },
     onError: () => {

@@ -215,13 +215,25 @@ export const ContainersTable = ({ tree }: { tree: DirectoryNode }) => {
     closeDeleteForm();
     router.push(`/containers`);
     toast.success("Container deleted successfully!");
-  }, [closeDeleteForm, router]);
+    void utils.containers.getDirectoryTree.invalidate({
+      containerId: tree.parent.id,
+    });
+    void utils.items.getAll.invalidate({ containerId: tree.parent.id });
+  }, [closeDeleteForm, router, tree.parent.id, utils]);
 
   const handleItemsMoved = useCallback(() => {
     closeMoveForm();
     router.push(`/containers/${data.parent.id}`);
     toast.success("Items moved successfully!");
-  }, [closeMoveForm, data.parent.id, router]);
+    void utils.containers.getDirectoryTree.invalidate({
+      containerId: data.parent.id,
+    });
+    void utils.items.getAll.invalidate({ containerId: data.parent.id });
+
+    for (const item of data.items ?? []) {
+      void utils.items.getAll.invalidate({ containerId: item.containerId });
+    }
+  }, [closeMoveForm, data.parent.id, router, utils, data.items]);
 
   if (!data && isLoading) {
     return <div className="flex justify-center p-4">Loading containers...</div>;
@@ -229,7 +241,7 @@ export const ContainersTable = ({ tree }: { tree: DirectoryNode }) => {
 
   return (
     <div className="grid h-full w-full grid-cols-1 grid-rows-2 gap-2 sm:grid-cols-2 md:grid-cols-3">
-      <Card className="row-span-2 h-full w-full col-span-2 md:col-span-1 md:p-4">
+      <Card className="col-span-2 row-span-2 h-full w-full md:col-span-1 md:p-4">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex-1">

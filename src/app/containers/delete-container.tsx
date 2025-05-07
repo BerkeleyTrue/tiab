@@ -35,8 +35,6 @@ export const DeleteContainer = ({
   onDelete: () => void;
   onClose: () => void;
 }) => {
-  const utils = api.useUtils();
-
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -52,7 +50,6 @@ export const DeleteContainer = ({
 
   const mutate = api.containers.delete.useMutation({
     onSuccess: () => {
-      void utils.containers.getDirectoryTree.invalidate({ containerId });
       onDelete();
     },
     onError: () => {

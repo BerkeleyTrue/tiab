@@ -24,7 +24,6 @@ export const DeleteForm = ({
   const deleteMutation = api.items.delete.useMutation({
     onSuccess: () => {
       onDelete();
-      toast.success("Item deleted successfully");
     },
     onError: (error) => {
       console.error("Failed to delete item:", error);

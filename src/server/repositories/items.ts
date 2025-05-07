@@ -76,9 +76,7 @@ export default class ItemsRepository {
     });
   }
 
-  async getPathname(input: { 
-    itemId: number;
-  }): Promise<string | null> {
+  async getPathname(input: { itemId: number }): Promise<string | null> {
     const res = await this.db
       .select({
         pathname: containersPathnameView.pathname,
@@ -89,10 +87,7 @@ export default class ItemsRepository {
         eq(items.containerId, containersPathnameView.id),
       )
       .where(
-        and(
-          eq(items.id, input.itemId), 
-          eq(items.userId, this.session.userId),
-        ),
+        and(eq(items.id, input.itemId), eq(items.userId, this.session.userId)),
       )
       .get();
 
@@ -103,6 +98,14 @@ export default class ItemsRepository {
     itemId: number;
     includeDeleted?: boolean;
   }): Promise<ItemWithPathname | null> {
+    const queries = [
+      eq(items.id, input.itemId),
+      eq(items.userId, this.session.userId),
+    ];
+
+    if (input.includeDeleted !== true) {
+      queries.push(eq(items.isDeleted, input.includeDeleted ?? false));
+    }
     const res = await this.db
       .select(itemWithPathnameColumns)
       .from(items)
@@ -110,13 +113,7 @@ export default class ItemsRepository {
         containersPathnameView,
         eq(items.containerId, containersPathnameView.id),
       )
-      .where(
-        and(
-          eq(items.id, input.itemId),
-          eq(items.userId, this.session.userId),
-          eq(items.isDeleted, input.includeDeleted ?? false),
-        ),
-      )
+      .where(and(...queries))
       .get();
     return res ?? null;
   }
@@ -128,13 +125,14 @@ export default class ItemsRepository {
     containerId?: number;
     includeDeleted?: boolean;
   }): Promise<ItemWithPathname[]> {
-    const queries = [
-      eq(items.userId, this.session.userId),
-      eq(items.isDeleted, includeDeleted),
-    ];
-    
+    const queries = [eq(items.userId, this.session.userId)];
+
     if (containerId) {
       queries.push(eq(items.containerId, containerId));
+    }
+
+    if (includeDeleted !== true) {
+      queries.push(eq(items.isDeleted, includeDeleted ?? false));
     }
 
     return await this.db

@@ -23,7 +23,11 @@ export async function getDirectoryTree(
     .select()
     .from(containers)
     .where(
-      and(eq(containers.parent, parent.path), eq(containers.userId, userId)),
+      and(
+        eq(containers.parent, parent.path),
+        eq(containers.userId, userId),
+        eq(containers.isDeleted, false),
+      ),
     )
     .all();
 
@@ -84,16 +88,19 @@ export class ContainerRepository {
     id: number;
     includeDeleted?: boolean;
   }): Promise<Container | null> {
+    const queries = [
+      eq(containers.id, input.id),
+      eq(containers.userId, this.session.userId),
+    ];
+
+    if (input.includeDeleted !== true) {
+      queries.push(eq(containers.isDeleted, input.includeDeleted ?? false));
+    }
+
     const res = await this.db
       .select()
       .from(containers)
-      .where(
-        and(
-          eq(containers.id, input.id),
-          eq(containers.isDeleted, input.includeDeleted ?? false),
-          eq(containers.userId, this.session.userId),
-        ),
-      )
+      .where(and(...queries))
       .get();
 
     return res ?? null;
@@ -104,17 +111,20 @@ export class ContainerRepository {
     parent: string;
     includeDeleted?: boolean;
   }): Promise<Container | null> {
+    const queries = [
+      eq(containers.path, input.path),
+      eq(containers.parent, input.parent),
+      eq(containers.userId, this.session.userId),
+    ];
+
+    if (input.includeDeleted !== true) {
+      queries.push(eq(containers.isDeleted, input.includeDeleted ?? false));
+    }
+
     const res = await this.db
       .select()
       .from(containers)
-      .where(
-        and(
-          eq(containers.path, input.path),
-          eq(containers.parent, input.parent),
-          eq(containers.isDeleted, input.includeDeleted ?? false),
-          eq(containers.userId, this.session.userId),
-        ),
-      )
+      .where(and(...queries))
       .get();
 
     return res ?? null;
@@ -127,6 +137,7 @@ export class ContainerRepository {
     const existingContainer = await this.getByPath({
       path: input.path,
       parent: input.parent,
+      includeDeleted: true,
     });
 
     // If container doesn't exist, create it
@@ -249,6 +260,7 @@ export class ContainerRepository {
             and(
               eq(containers.id, input.containerId),
               eq(containers.userId, this.session.userId),
+              eq(containers.isDeleted, false),
             ),
           )
           .get();

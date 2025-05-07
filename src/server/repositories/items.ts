@@ -217,6 +217,12 @@ export default class ItemsRepository {
     containerId: number;
     newPathname: string;
   }) {
+    const itemsToMove = await this.getAll({ containerId });
+
+    if (itemsToMove.length === 0) {
+      return false;
+    }
+
     const newCont = await this.containerRepo.ensurePathname({
       pathname: newPathname,
     });
@@ -227,11 +233,6 @@ export default class ItemsRepository {
       );
     }
 
-    const itemsToMove = await this.getAll({ containerId });
-
-    if (itemsToMove.length === 0) {
-      return false;
-    }
     const itemIds = itemsToMove.map((item) => item.id);
 
     return await this.db

@@ -40,14 +40,16 @@ import { format } from "date-fns";
 import { useBoolean } from "@/hooks/use-boolean";
 import { Edit } from "lucide-react";
 import Link from "next/link";
-import { pluralize } from "@/lib/utils";
+import { cn, pluralize } from "@/lib/utils";
 
 export const ItemsTable = ({
   initItems,
   initContainer,
+  className,
 }: {
   initItems: ItemWithPathname[];
   initContainer?: Container;
+  className?: string;
 }) => {
   const utils = api.useUtils();
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -136,7 +138,7 @@ export const ItemsTable = ({
   }
 
   return (
-    <Card className="w-full">
+    <Card className={cn("w-full", className)}>
       <CardHeader className="">
         <CardTitle className="capitalize">
           {container ? `${container.path}'s items` : "All items"}
@@ -233,7 +235,11 @@ export const ItemsTable = ({
           Next
         </Button>
       </CardFooter>
-      <AddItemForm isOpen={isAddItemOpen} onClose={closeAddItem} containerId={container?.id} />
+      <AddItemForm
+        isOpen={isAddItemOpen}
+        onClose={closeAddItem}
+        containerId={container?.id}
+      />
     </Card>
   );
 };

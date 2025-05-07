@@ -1,4 +1,4 @@
-import { and, eq, getTableColumns } from "drizzle-orm";
+import { and, eq, getTableColumns, inArray } from "drizzle-orm";
 import {
   items,
   containersPathnameView,
@@ -111,7 +111,13 @@ export default class ItemsRepository {
     return res ?? null;
   }
 
-  async getAll(): Promise<ItemWithPathname[]> {
+  async getAll({ containerId }: { containerId?: number }): Promise<ItemWithPathname[]> {
+
+    const queries = [eq(items.userId, this.session.userId)];
+    if (containerId) {
+      queries.push(eq(items.containerId, containerId));
+    }
+
     return await this.db
       .select({
         ...getTableColumns(items),
@@ -122,7 +128,7 @@ export default class ItemsRepository {
         containersPathnameView,
         eq(items.containerId, containersPathnameView.id),
       )
-      .where(eq(items.userId, this.session.userId));
+      .where(and(...queries));
   }
 
   async update(input: {
@@ -181,6 +187,23 @@ export default class ItemsRepository {
         pathname: (await this.getPathname({ itemId: newItem.id })) ?? "",
       };
     });
+  }
+
+  async moveItemsToContainer({ itemIds, containerId }: { itemIds: number[]; containerId: number }) {
+    return await this.db.update(items)
+      .set({
+        containerId,
+      })
+      .where(
+        and(
+          eq(items.userId, this.session.userId),
+          inArray(items.id, itemIds),
+        ),
+      )
+      .execute()
+      .then((res) => {
+        return res.rowsAffected > 0;
+      })
   }
 
   async delete(input: { itemId: number }): Promise<boolean> {

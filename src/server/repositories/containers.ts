@@ -252,4 +252,17 @@ export class ContainerRepository {
 
     return res?.pathname ?? null;
   }
+
+  async delete(input: { containerId: number }): Promise<boolean> {
+    return await this.db
+      .delete(containers)
+      .where(
+        and(
+          eq(containers.id, input.containerId),
+          eq(containers.userId, this.session.userId),
+        ),
+      )
+      .execute()
+      .then((res) => res.rowsAffected > 0);
+  }
 }

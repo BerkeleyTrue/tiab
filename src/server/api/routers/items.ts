@@ -1,12 +1,6 @@
 import { z } from "zod";
 
 import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
-import {
-  items,
-  containersPathnameView,
-  type ItemWithPathname,
-} from "@/server/db/schema";
-import { and, eq, getTableColumns } from "drizzle-orm";
 
 export const itemsRouter = createTRPCRouter({
   create: publicProcedure
@@ -33,26 +27,8 @@ export const itemsRouter = createTRPCRouter({
         containerId: z.number().optional(),
       }),
     )
-    .query(async ({ ctx, input }): Promise<ItemWithPathname[]> => {
-      const queries = [eq(items.userId, ctx.session.user.id)];
-
-      if (input.containerId) {
-        queries.push(eq(items.containerId, input.containerId));
-      }
-
-      const res = await ctx.db
-        .select({
-          ...getTableColumns(items),
-          pathname: containersPathnameView.pathname,
-        })
-        .from(items)
-        .innerJoin(
-          containersPathnameView,
-          eq(items.containerId, containersPathnameView.id),
-        )
-        .where(and(...queries));
-
-      return res;
+    .query(async ({ ctx, input }) => {
+      return ctx.repos.items.getAll(input);
     }),
 
   getById: publicProcedure

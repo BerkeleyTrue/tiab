@@ -2,7 +2,7 @@
 
 import type { DirectoryNode, Item } from "@/server/db/schema";
 import { api } from "@/trpc/react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ChevronRight,
   ChevronDown,
@@ -26,6 +26,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { ItemsTable } from "../items";
+import { toast } from "sonner";
+import { useBoolean } from "@/hooks/use-boolean";
+import { DeleteContainer } from "./delete-container";
 
 type TreeNodeProps = {
   node: DirectoryNode;
@@ -179,6 +182,11 @@ const ItemRow = ({ item, level }: { item: Item; level: number }) => {
 export const ContainersTable = ({ tree }: { tree: DirectoryNode }) => {
   const utils = api.useUtils();
   const router = useRouter();
+  const {
+    value: isDeleteOpen,
+    setFalse: closeDeleteForm,
+    setTrue: openDeleteForm,
+  } = useBoolean(false);
 
   useEffect(() => {
     utils.containers.getDirectoryTree.setData(
@@ -197,13 +205,19 @@ export const ContainersTable = ({ tree }: { tree: DirectoryNode }) => {
     containerId: tree.parent.id,
   });
 
+  const handleDelete = useCallback(() => {
+    closeDeleteForm();
+    toast.success("Container deleted successfully!");
+    router.push(`/containers`);
+  }, [closeDeleteForm, router]);
+
   if (!data && isLoading) {
     return <div className="flex justify-center p-4">Loading containers...</div>;
   }
 
   return (
-    <div className="flex h-full w-full items-start gap-2">
-      <Card className="mx-auto h-full w-full md:max-w-md md:p-4">
+    <div className="grid h-full w-full grid-cols-1 grid-rows-2 gap-2 sm:grid-cols-2 md:grid-cols-3">
+      <Card className="row-span-2 mx-auto h-full w-full sm:col-span-2 md:col-span-1 md:p-4">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex-1">
@@ -237,8 +251,40 @@ export const ContainersTable = ({ tree }: { tree: DirectoryNode }) => {
         </CardContent>
       </Card>
       {data.items && (
-        <ItemsTable initItems={data.items} initContainer={data.parent} />
+        <ItemsTable
+          initItems={data.items}
+          initContainer={data.parent}
+          className="col-span-2"
+        />
       )}
+      <Card className="col-span-2">
+        <CardHeader>
+          <CardTitle className="text-2xl">Container Actions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col gap-2">
+            <Button variant="secondary"
+              disabled={data?.items?.length === 0}
+            >
+              Move all Items to another container {data.items?.length === 0 && "(No items to move)"}
+            </Button>
+            <Button
+              variant="destructive"
+              className="w-full"
+              onClick={openDeleteForm}
+              disabled={data.parent.path === "/"}
+            >
+              Delete Container {data.parent.path === "/" && "(Cannot delete Root)"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+      <DeleteContainer
+        isOpen={isDeleteOpen}
+        onClose={closeDeleteForm}
+        onDelete={handleDelete}
+        containerId={data.parent.id}
+      />
     </div>
   );
 };

@@ -182,4 +182,14 @@ export default class ItemsRepository {
       };
     });
   }
+
+  async delete(input: { itemId: number }): Promise<boolean> {
+    return this.db
+      .delete(items)
+      .where(
+        and(eq(items.id, input.itemId), eq(items.userId, this.session.userId)),
+      )
+      .returning()
+      .then((res) => res.length > 0);
+  }
 }

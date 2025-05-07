@@ -2,6 +2,7 @@
 
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardFooter,
@@ -9,83 +10,114 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Package, Calendar, Clock, PackageOpen, Edit } from "lucide-react";
+import {
+  Package,
+  Calendar,
+  Clock,
+  PackageOpen,
+  Edit,
+  BookOpen,
+  Bomb,
+} from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { ItemWithPathname } from "@/server/db/schema";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { DeleteForm } from "./delete-popup";
+import { useBoolean } from "@/hooks/use-boolean";
+import { useCallback } from "react";
+import { useRouter } from "next/navigation";
 
 export const ItemView = ({ item }: { item: ItemWithPathname }) => {
+  const router = useRouter();
+  const {
+    value: isDeleteOpen,
+    setFalse: closeDeleteForm,
+    setTrue: openDeleteForm,
+  } = useBoolean(false);
+
+  const handleDelete = useCallback(() => {
+    closeDeleteForm();
+    router.push(`/containers/${item.containerId}`);
+  }, [closeDeleteForm, item.containerId, router]);
+
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex-1">
-            <CardTitle className="flex items-center text-2xl">
-              <Package className="mr-2 h-6 w-6" />
-              {item.name}
-              <Link href={`/items/${item.id}/edit`}>
-                <Button variant="ghost">
-                  <Edit className="h-4 w-4" />
-                </Button>
-              </Link>
-            </CardTitle>
-            <CardDescription>
-              Located in:{" "}
-              <Link
-                href={`/containers/${item.containerId}`}
-                className="hover:underline"
-              >
-                {item.pathname}
-              </Link>
-            </CardDescription>
-          </div>
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-2xl">
+            <Package className="size-6" />
+            <span className="">{item.name}</span>
 
-          {(item.count ?? 0) > 1 && (
-            <Badge variant="secondary" className="mr-4 px-3 py-1 text-lg">
-              x{item.count}
-            </Badge>
-          )}
-
-          <Button variant="outline" asChild>
-            <Link href={`/containers/${item.containerId}`}>
-              <PackageOpen className="h-4 w-4" />
+            {(item.count ?? 0) > 1 && (
+              <Badge variant="secondary" className="size-8">
+                x{item.count}
+              </Badge>
+            )}
+            {item.isPublic && (
+              <Badge variant="outline" className="size-8">
+                <BookOpen className="size-4" />
+              </Badge>
+            )}
+          </CardTitle>
+          <CardDescription>
+            Located in:{" "}
+            <Link
+              href={`/containers/${item.containerId}`}
+              className="hover:underline"
+            >
+              {item.pathname}
             </Link>
-          </Button>
-        </div>
-      </CardHeader>
+          </CardDescription>
+          <CardAction className="flex gap-2">
+            <Button variant="outline" asChild>
+              <Link href={`/items/${item.id}/edit`}>
+                <Edit className="size-4" />
+              </Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href={`/containers/${item.containerId}`}>
+                <PackageOpen className="size-4" />
+              </Link>
+            </Button>
+            <Button variant="destructive" onClick={openDeleteForm}>
+              <Bomb className="size-4" />
+            </Button>
+          </CardAction>
+        </CardHeader>
 
-      <CardContent>
-        {item.description ? (
-          <div className="prose dark:prose-invert max-w-none">
-            <h3>Description</h3>
-            <p>{item.description}</p>
-          </div>
-        ) : (
-          <p className="text-muted-foreground italic">
-            No description provided
-          </p>
-        )}
-      </CardContent>
+        <CardContent>
+          {item.description ? (
+            <div className="prose dark:prose-invert max-w-none">
+              <h3 className="text-md font-bold">Description</h3>
+              <p>{item.description}</p>
+            </div>
+          ) : (
+            <p className="text-muted-foreground italic">
+              No description provided
+            </p>
+          )}
+        </CardContent>
 
-      <CardFooter className="text-muted-foreground flex justify-between text-sm">
-        <div className="flex items-center">
-          <Calendar className="mr-1 h-4 w-4" />
-          Created{" "}
-          {formatDistanceToNow(new Date(item.createdAt), {
-            addSuffix: true,
-          })}
-        </div>
-        {item.updatedAt && (
-          <div className="flex items-center">
-            <Clock className="mr-1 h-4 w-4" />
-            Updated{" "}
-            {formatDistanceToNow(new Date(item.updatedAt), {
-              addSuffix: true,
-            })}
+        <CardFooter className="text-muted-foreground flex justify-between text-sm">
+          <div className="flex gap-2">
+            <Calendar className="size-4" />
+            {`Created ${formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}`}
           </div>
-        )}
-      </CardFooter>
-    </Card>
+          {item.updatedAt && (
+            <div className="flex gap-2">
+              <Clock className="size-4" />
+              {`Updated ${formatDistanceToNow(new Date(item.updatedAt), { addSuffix: true })}`}
+            </div>
+          )}
+        </CardFooter>
+      </Card>
+      <DeleteForm
+        isOpen={isDeleteOpen}
+        itemId={item.id}
+        onDelete={handleDelete}
+        onClose={closeDeleteForm}
+      />
+    </>
   );
 };

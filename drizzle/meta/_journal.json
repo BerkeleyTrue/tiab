@@ -36,6 +36,13 @@
       "when": 1746596254625,
       "tag": "0004_amused_junta",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1746597870820,
+      "tag": "0005_luxuriant_boom_boom",
+      "breakpoints": true
     }
   ]
 }

@@ -4,7 +4,7 @@
 import type { z } from "zod";
 import { getTableColumns, relations, sql } from "drizzle-orm";
 import {
-  index,
+  uniqueIndex,
   sqliteTableCreator,
   sqliteView,
   integer,
@@ -53,7 +53,7 @@ export const containers = createTable(
     updatedAt: d.text().$onUpdate(() => new Date().toISOString()), // When the fast record was last updated
   }),
   // a path and parent path index
-  (t) => [index("path_parent_idx").on(t.path, t.parent)],
+  (t) => [uniqueIndex("path_parent_idx").on(t.path, t.parent)],
 );
 
 // a container has one user
@@ -67,6 +67,11 @@ export const containerRelationships = relations(
       references: [users.id],
     }),
     items: many(items),
+    parent: one(containers, {
+      fields: [containers.parent],
+      references: [containers.path],
+    }),
+    children: many(containers),
   }),
 );
 
@@ -98,7 +103,7 @@ export const items = createTable(
     updatedAt: d.text().$onUpdate(() => new Date().toISOString()), // When the fast record was last updated
   }),
   // a container index
-  (t) => [index("item_container_idx").on(t.containerId, t.name)],
+  (t) => [uniqueIndex("item_container_idx").on(t.containerId, t.name)],
 );
 
 const itemSelectSchema = createSelectSchema(items); // eslint-disable-line @typescript-eslint/no-unused-vars

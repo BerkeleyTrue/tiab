@@ -29,6 +29,7 @@ import { ItemsTable } from "../items";
 import { toast } from "sonner";
 import { useBoolean } from "@/hooks/use-boolean";
 import { DeleteContainer } from "./delete-container";
+import { MoveItems } from "./move-items";
 
 type TreeNodeProps = {
   node: DirectoryNode;
@@ -187,6 +188,11 @@ export const ContainersTable = ({ tree }: { tree: DirectoryNode }) => {
     setFalse: closeDeleteForm,
     setTrue: openDeleteForm,
   } = useBoolean(false);
+  const {
+    value: isMoveOpen,
+    setFalse: closeMoveForm,
+    setTrue: openMoveForm,
+  } = useBoolean(false);
 
   useEffect(() => {
     utils.containers.getDirectoryTree.setData(
@@ -207,9 +213,15 @@ export const ContainersTable = ({ tree }: { tree: DirectoryNode }) => {
 
   const handleDelete = useCallback(() => {
     closeDeleteForm();
-    toast.success("Container deleted successfully!");
     router.push(`/containers`);
+    toast.success("Container deleted successfully!");
   }, [closeDeleteForm, router]);
+
+  const handleItemsMoved = useCallback(() => {
+    closeMoveForm();
+    router.push(`/containers/${data.parent.id}`);
+    toast.success("Items moved successfully!");
+  }, [closeMoveForm, data.parent.id, router]);
 
   if (!data && isLoading) {
     return <div className="flex justify-center p-4">Loading containers...</div>;
@@ -263,10 +275,13 @@ export const ContainersTable = ({ tree }: { tree: DirectoryNode }) => {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-2">
-            <Button variant="secondary"
+            <Button
+              variant="secondary"
               disabled={data?.items?.length === 0}
+              onClick={openMoveForm}
             >
-              Move all Items to another container {data.items?.length === 0 && "(No items to move)"}
+              Move all Items to another container{" "}
+              {data.items?.length === 0 && "(No items to move)"}
             </Button>
             <Button
               variant="destructive"
@@ -274,7 +289,8 @@ export const ContainersTable = ({ tree }: { tree: DirectoryNode }) => {
               onClick={openDeleteForm}
               disabled={data.parent.path === "/"}
             >
-              Delete Container {data.parent.path === "/" && "(Cannot delete Root)"}
+              Delete Container{" "}
+              {data.parent.path === "/" && "(Cannot delete Root)"}
             </Button>
           </div>
         </CardContent>
@@ -285,6 +301,12 @@ export const ContainersTable = ({ tree }: { tree: DirectoryNode }) => {
         onDelete={handleDelete}
         containerId={data.parent.id}
         hasItems={(data.items?.length ?? 0) > 0}
+      />
+      <MoveItems
+        isOpen={isMoveOpen}
+        containerId={data.parent.id}
+        onClose={closeMoveForm}
+        onMove={handleItemsMoved}
       />
     </div>
   );

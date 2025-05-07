@@ -229,7 +229,7 @@ export const ContainersTable = ({ tree }: { tree: DirectoryNode }) => {
 
   return (
     <div className="grid h-full w-full grid-cols-1 grid-rows-2 gap-2 sm:grid-cols-2 md:grid-cols-3">
-      <Card className="row-span-2 mx-auto h-full w-full sm:col-span-2 md:col-span-1 md:p-4">
+      <Card className="row-span-2 h-full w-full col-span-2 md:col-span-1 md:p-4">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex-1">

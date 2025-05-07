@@ -131,6 +131,7 @@ export default class ItemsRepository {
     name?: string;
     description?: string;
     count?: number;
+    isPublic?: boolean;
   }): Promise<ItemWithPathname | null> {
     return this.db.transaction(async (tx) => {
       const itemRepo = this.withTransaction(tx);
@@ -153,9 +154,11 @@ export default class ItemsRepository {
       const res = await tx
         .update(items)
         .set({
-          name: input.name ?? item.name,
-          userId: this.session.userId,
           containerId: containerBase.id,
+          userId: this.session.userId,
+
+          name: input.name ?? item.name,
+          isPublic: input.isPublic ?? item.isPublic ?? false,
           description: input.description ?? item.description,
           count: input.count ?? item.count,
         })

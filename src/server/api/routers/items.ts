@@ -68,6 +68,7 @@ export const itemsRouter = createTRPCRouter({
         container: z.string().min(1),
         name: z.string().optional(),
         description: z.string().optional(),
+        isPublic: z.boolean().optional(),
         count: z.number().optional(),
       }),
     )

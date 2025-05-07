@@ -80,13 +80,17 @@ export class ContainerRepository {
     return res[0] ?? null;
   }
 
-  async getById(input: { id: number }): Promise<Container | null> {
+  async getById(input: {
+    id: number;
+    includeDeleted?: boolean;
+  }): Promise<Container | null> {
     const res = await this.db
       .select()
       .from(containers)
       .where(
         and(
           eq(containers.id, input.id),
+          eq(containers.isDeleted, input.includeDeleted ?? false),
           eq(containers.userId, this.session.userId),
         ),
       )
@@ -98,6 +102,7 @@ export class ContainerRepository {
   async getByPath(input: {
     path: string;
     parent: string;
+    includeDeleted?: boolean;
   }): Promise<Container | null> {
     const res = await this.db
       .select()
@@ -106,6 +111,7 @@ export class ContainerRepository {
         and(
           eq(containers.path, input.path),
           eq(containers.parent, input.parent),
+          eq(containers.isDeleted, input.includeDeleted ?? false),
           eq(containers.userId, this.session.userId),
         ),
       )
@@ -131,9 +137,21 @@ export class ContainerRepository {
       });
     }
 
+    if (existingContainer.isDeleted) {
+      return await this.update({
+        containerId: existingContainer.id,
+        unDeleted: true,
+      });
+    }
+
     return existingContainer;
   }
 
+  /**
+   * Ensures the existence of a container hierarchy based on the provided pathname.
+   * This method will create any missing containers in the hierarchy.
+   * And will undelete any deleted containers in the hierarchy.
+   */
   async ensurePathname(input: { pathname: string }): Promise<Container | null> {
     // Process container path and create container hierarchy
     const segments = input.pathname
@@ -215,6 +233,8 @@ export class ContainerRepository {
           id: 0,
           path: "/",
           parent: "",
+          isDeleted: false,
+          isPublic: true,
           userId: this.session.userId,
           createdAt: new Date().toISOString(),
           updatedAt: null,
@@ -253,9 +273,40 @@ export class ContainerRepository {
     return res?.pathname ?? null;
   }
 
+  async update(input: {
+    containerId: number;
+    isPublic?: boolean;
+    unDeleted?: boolean;
+  }): Promise<Container | null> {
+    const res = await this.db
+      .update(containers)
+      .set({
+        isPublic: input.isPublic,
+        isDeleted: input.unDeleted ? false : undefined,
+      })
+      .where(
+        and(
+          eq(containers.id, input.containerId),
+          eq(containers.userId, this.session.userId),
+        ),
+      )
+      .returning();
+
+    const updatedContainer = res[0];
+
+    if (!updatedContainer) {
+      return null;
+    }
+
+    return updatedContainer;
+  }
+
   async delete(input: { containerId: number }): Promise<boolean> {
     return await this.db
-      .delete(containers)
+      .update(containers)
+      .set({
+        isDeleted: true,
+      })
       .where(
         and(
           eq(containers.id, input.containerId),

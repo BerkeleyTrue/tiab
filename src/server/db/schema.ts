@@ -2,7 +2,7 @@
 // https://orm.drizzle.team/docs/sql-schema-declaration
 
 import type { z } from "zod";
-import { relations, sql } from "drizzle-orm";
+import { getTableColumns, relations, sql } from "drizzle-orm";
 import {
   index,
   sqliteTableCreator,
@@ -44,6 +44,8 @@ export const containers = createTable(
     path: d.text({ length: 256 }).notNull(),
     parent: d.text({ length: 256 }).notNull(),
     userId: d.integer({ mode: "number" }).notNull(),
+    isPublic: d.integer({ mode: "boolean" }).default(false), // 0 = private, 1 = public
+    isDeleted: d.integer({ mode: "boolean" }).default(false), // 0 = not deleted, 1 = deleted
     createdAt: d
       .text()
       .notNull()
@@ -69,7 +71,10 @@ export const containerRelationships = relations(
 );
 
 const containerSelectSchema = createSelectSchema(containers); // eslint-disable-line @typescript-eslint/no-unused-vars
+const containerInsertSchema = createInsertSchema(containers); // eslint-disable-line @typescript-eslint/no-unused-vars
+
 export type Container = z.infer<typeof containerSelectSchema>;
+export type ContainerInsert = z.infer<typeof containerInsertSchema>;
 
 // an item is a thing that can be in a container
 // it has a name and a description
@@ -85,6 +90,7 @@ export const items = createTable(
     description: d.text(),
     containerId: d.integer({ mode: "number" }).notNull(),
     isPublic: d.integer({ mode: "boolean" }).default(false), // 0 = private, 1 = public
+    isDeleted: d.integer({ mode: "boolean" }).default(false), // 0 = not deleted, 1 = deleted
     createdAt: d
       .text()
       .notNull()
@@ -95,10 +101,11 @@ export const items = createTable(
   (t) => [index("item_container_idx").on(t.containerId, t.name)],
 );
 
-export const itemSelectSchema = createSelectSchema(items);
-export const createItemSchema = createInsertSchema(items);
+const itemSelectSchema = createSelectSchema(items); // eslint-disable-line @typescript-eslint/no-unused-vars
+const createItemSchema = createInsertSchema(items); // eslint-disable-line @typescript-eslint/no-unused-vars
 
 export type Item = z.infer<typeof itemSelectSchema>;
+export type ItemInsert = z.infer<typeof createItemSchema>;
 
 export type ItemWithPathname = Item & {
   pathname: string;
@@ -160,4 +167,9 @@ export type DirectoryNode = {
   parent: Container;
   items?: ItemWithPathname[];
   children: DirectoryNode[];
+};
+
+export const itemWithPathnameColumns = {
+  ...getTableColumns(items),
+  pathname: containersPathnameView.pathname,
 };

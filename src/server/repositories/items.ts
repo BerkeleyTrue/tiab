@@ -3,6 +3,7 @@ import {
   items,
   containersPathnameView,
   type ItemWithPathname,
+  itemWithPathnameColumns,
 } from "@/server/db/schema";
 import type { Db, Tx } from "../db";
 import type { ContainerRepository } from "./containers";
@@ -75,7 +76,9 @@ export default class ItemsRepository {
     });
   }
 
-  async getPathname(input: { itemId: number }): Promise<string | null> {
+  async getPathname(input: { 
+    itemId: number;
+  }): Promise<string | null> {
     const res = await this.db
       .select({
         pathname: containersPathnameView.pathname,
@@ -86,34 +89,50 @@ export default class ItemsRepository {
         eq(items.containerId, containersPathnameView.id),
       )
       .where(
-        and(eq(items.id, input.itemId), eq(items.userId, this.session.userId)),
+        and(
+          eq(items.id, input.itemId), 
+          eq(items.userId, this.session.userId),
+        ),
       )
       .get();
 
     return res?.pathname ?? null;
   }
 
-  async getById(input: { itemId: number }): Promise<ItemWithPathname | null> {
+  async getById(input: {
+    itemId: number;
+    includeDeleted?: boolean;
+  }): Promise<ItemWithPathname | null> {
     const res = await this.db
-      .select({
-        ...getTableColumns(items),
-        pathname: containersPathnameView.pathname,
-      })
+      .select(itemWithPathnameColumns)
       .from(items)
       .innerJoin(
         containersPathnameView,
         eq(items.containerId, containersPathnameView.id),
       )
       .where(
-        and(eq(items.id, input.itemId), eq(items.userId, this.session.userId)),
+        and(
+          eq(items.id, input.itemId),
+          eq(items.userId, this.session.userId),
+          eq(items.isDeleted, input.includeDeleted ?? false),
+        ),
       )
       .get();
     return res ?? null;
   }
 
-  async getAll({ containerId }: { containerId?: number }): Promise<ItemWithPathname[]> {
-
-    const queries = [eq(items.userId, this.session.userId)];
+  async getAll({
+    containerId,
+    includeDeleted = false,
+  }: {
+    containerId?: number;
+    includeDeleted?: boolean;
+  }): Promise<ItemWithPathname[]> {
+    const queries = [
+      eq(items.userId, this.session.userId),
+      eq(items.isDeleted, includeDeleted),
+    ];
+    
     if (containerId) {
       queries.push(eq(items.containerId, containerId));
     }
@@ -189,26 +208,33 @@ export default class ItemsRepository {
     });
   }
 
-  async moveItemsToContainer({ itemIds, containerId }: { itemIds: number[]; containerId: number }) {
-    return await this.db.update(items)
+  async moveItemsToContainer({
+    itemIds,
+    containerId,
+  }: {
+    itemIds: number[];
+    containerId: number;
+  }) {
+    return await this.db
+      .update(items)
       .set({
         containerId,
       })
       .where(
-        and(
-          eq(items.userId, this.session.userId),
-          inArray(items.id, itemIds),
-        ),
+        and(eq(items.userId, this.session.userId), inArray(items.id, itemIds)),
       )
       .execute()
       .then((res) => {
         return res.rowsAffected > 0;
-      })
+      });
   }
 
   async delete(input: { itemId: number }): Promise<boolean> {
     return this.db
-      .delete(items)
+      .update(items)
+      .set({
+        isDeleted: true,
+      })
       .where(
         and(eq(items.id, input.itemId), eq(items.userId, this.session.userId)),
       )

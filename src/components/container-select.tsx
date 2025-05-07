@@ -46,6 +46,7 @@ interface ContainerSelectProps<TFieldValues extends ContainerFieldValues> {
   description?: string;
   onTabPress?: () => void;
   label?: string;
+  disabled?: boolean;
 }
 
 export function ContainerSelect<TFieldValues extends ContainerFieldValues>({
@@ -54,6 +55,7 @@ export function ContainerSelect<TFieldValues extends ContainerFieldValues>({
   setValue,
   getValues,
   onTabPress,
+  disabled,
 }: ContainerSelectProps<TFieldValues>) {
   const [openPopover, setOpenPopover] = useState(false);
   const containerInputRef = useRef<HTMLInputElement>(null);
@@ -218,7 +220,7 @@ export function ContainerSelect<TFieldValues extends ContainerFieldValues>({
       render={({ field }) => (
         <FormItem>
           <FormLabel>Container</FormLabel>
-          <Popover open={openPopover} onOpenChange={setOpenPopover}>
+          <Popover open={!disabled && openPopover} onOpenChange={setOpenPopover}>
             <PopoverTrigger asChild>
               <FormControl>
                 <div className="relative">
@@ -229,11 +231,15 @@ export function ContainerSelect<TFieldValues extends ContainerFieldValues>({
                     }}
                     onClick={(e) => e.preventDefault()}
                     onFocus={() => {
+                      if (disabled) {
+                        return;
+                      }
                       setOpenPopover(true);
                       containerInputRef.current?.focus();
                     }}
                     placeholder="/storage/location"
                     className="w-full"
+                    disabled={disabled}
                   />
                 </div>
               </FormControl>
@@ -246,6 +252,7 @@ export function ContainerSelect<TFieldValues extends ContainerFieldValues>({
                   value={(field.value as string).split("/").pop() ?? ""}
                   onValueChange={handleCommandValueChange}
                   onKeyDown={handleCommandKeyDown}
+                  disabled={disabled}
                 />
                 <CommandList>
                   <CommandEmpty>No containers found.</CommandEmpty>

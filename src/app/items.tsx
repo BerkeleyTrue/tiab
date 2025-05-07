@@ -233,7 +233,7 @@ export const ItemsTable = ({
           Next
         </Button>
       </CardFooter>
-      <AddItemForm isOpen={isAddItemOpen} onClose={closeAddItem} />
+      <AddItemForm isOpen={isAddItemOpen} onClose={closeAddItem} containerId={container?.id} />
     </Card>
   );
 };

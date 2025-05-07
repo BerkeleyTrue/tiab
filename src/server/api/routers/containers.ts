@@ -51,4 +51,14 @@ export const containerRouter = createTRPCRouter({
     .query(async ({ ctx, input }): Promise<DirectoryNode> => {
       return ctx.repos.containers.getDirectoryTree(input);
     }),
+
+  getPathname: publicProcedure
+    .input(
+      z.object({
+        containerId: z.number(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      return ctx.repos.containers.getPathname(input);
+    }),
 });

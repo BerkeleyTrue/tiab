@@ -240,4 +240,16 @@ export class ContainerRepository {
       return getDirectoryTree(tx, parent, this.session.userId);
     });
   }
+
+  async getPathname(input: { containerId: number }): Promise<string | null> {
+    const res = await this.db
+      .select({
+        pathname: containersPathnameView.pathname,
+      })
+      .from(containersPathnameView)
+      .where(eq(containersPathnameView.id, input.containerId))
+      .get();
+
+    return res?.pathname ?? null;
+  }
 }

@@ -2,12 +2,13 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { api } from "@/trpc/react";
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import {
   Form,
@@ -38,12 +39,20 @@ type FormValues = z.infer<typeof formSchema>;
 export const AddItemForm = ({
   isOpen,
   onClose,
+  containerId,
 }: {
   isOpen: boolean;
   onClose: () => void;
+  containerId?: number;
 }) => {
   const utils = api.useUtils();
   const nameInputRef = useRef<HTMLInputElement>(null);
+  const { data: pathname } = api.containers.getPathname.useQuery(
+    { containerId: containerId ?? 0 },
+    {
+      enabled: !!containerId,
+    },
+  );
 
   // Initialize form with react-hook-form and zod validation
   const form = useForm<FormValues>({
@@ -56,6 +65,13 @@ export const AddItemForm = ({
       isPublic: false,
     },
   });
+
+  // Set the default container value if containerId is provided
+  useEffect(() => {
+    if (containerId && pathname) {
+      form.setValue("container", pathname);
+    }
+  }, [pathname, form]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleClose = useCallback(() => {
     onClose();
@@ -79,10 +95,12 @@ export const AddItemForm = ({
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Add New Item</DialogTitle>
-        </DialogHeader>
         <Form {...form}>
+          <DialogHeader>
+            <DialogTitle>
+              {pathname ? `Add to ${pathname}` : "Add New Item"}
+            </DialogTitle>
+          </DialogHeader>
           <form
             onSubmit={form.handleSubmit((values) => {
               mutate.mutate(values);
@@ -97,6 +115,7 @@ export const AddItemForm = ({
               onTabPress={() => {
                 nameInputRef.current?.focus();
               }}
+              disabled={!!containerId}
             />
 
             <FormField
@@ -182,9 +201,15 @@ export const AddItemForm = ({
               </p>
             )}
 
-            <Button type="submit" className="mt-2" disabled={mutate.isPending}>
-              {mutate.isPending ? "Adding..." : "Add Item"}
-            </Button>
+            <DialogFooter>
+              <Button
+                type="submit"
+                className="mt-2"
+                disabled={mutate.isPending}
+              >
+                {mutate.isPending ? "Adding..." : "Add Item"}
+              </Button>
+            </DialogFooter>
           </form>
         </Form>
       </DialogContent>

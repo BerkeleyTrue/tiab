@@ -41,6 +41,7 @@ const TreeNode = ({ node, level }: TreeNodeProps) => {
   const hasChildren = node.children && node.children.length > 0;
   const hasItems = node.items && node.items.length > 0;
   const isRoot = level === 0;
+  const items = (node?.items ?? []).slice(0, 4);
 
   const itemCount = useMemo(() => {
     function getChildrenItemCount(children: DirectoryNode[]): number {
@@ -107,9 +108,13 @@ const TreeNode = ({ node, level }: TreeNodeProps) => {
           </Badge>
         )}
 
-        <Link href={`/containers/${node.parent.id}`} className="mr-2">
-          <SquareArrowOutUpRight className="h-4 w-4" />
-        </Link>
+        {!isRoot ? (
+          <Link href={`/containers/${node.parent.id}`} className="mr-2">
+            <SquareArrowOutUpRight className="h-4 w-4" />
+          </Link>
+        ) : (
+          <span className="w-5" />
+        )}
       </div>
 
       {isExpanded && (
@@ -125,9 +130,25 @@ const TreeNode = ({ node, level }: TreeNodeProps) => {
 
           {!isRoot && hasItems && (
             <div className="w-full">
-              {node.items?.map((item) => (
+              {items.map((item) => (
                 <ItemRow key={item.id} item={item} level={level + 1} />
               ))}
+              {items.length < (node.items?.length ?? 0) && (
+                <Link
+                  className="flex items-center rounded-md px-2 py-1"
+                  style={{ paddingLeft: `${levelToPadding(level + 1)}px` }}
+                  href={`/containers/${node.parent.id}`}
+                >
+                  <span className="w-5" />
+                  <Bone className="mr-2 h-4 w-4" />
+                  <span className="truncate">
+                    {(node?.items?.length ?? 0) - items.length} more items...
+                  </span>
+                  <span className="ml-2 rounded-full px-2 py-0.5 text-xs">
+                    x{node?.items?.length ?? 0 - items.length}
+                  </span>
+                </Link>
+              )}
             </div>
           )}
         </>
@@ -181,8 +202,8 @@ export const ContainersTable = ({ tree }: { tree: DirectoryNode }) => {
   }
 
   return (
-    <>
-      <Card className="mx-auto w-full max-w-4xl md:p-4">
+    <div className="flex h-full w-full items-start gap-2">
+      <Card className="mx-auto h-full w-full md:max-w-md md:p-4">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex-1">
@@ -218,6 +239,6 @@ export const ContainersTable = ({ tree }: { tree: DirectoryNode }) => {
       {data.items && (
         <ItemsTable initItems={data.items} initContainer={data.parent} />
       )}
-    </>
+    </div>
   );
 };

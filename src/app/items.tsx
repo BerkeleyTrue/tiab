@@ -141,7 +141,7 @@ export const ItemsTable = ({
         <CardTitle className="capitalize">
           {container ? `${container.path}'s items` : "All items"}
         </CardTitle>
-        <CardDescription className="text-right">
+        <CardDescription>
           {items.length} {pluralize(items.length, "item")} found.
         </CardDescription>
         <CardAction className="flex items-center justify-between">

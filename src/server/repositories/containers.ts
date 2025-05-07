@@ -205,6 +205,7 @@ export class ContainerRepository {
     const queries = [
       eq(containers.parent, parent),
       eq(containers.userId, this.session.userId),
+      eq(containers.isDeleted, false),
     ];
 
     if (query?.length) {

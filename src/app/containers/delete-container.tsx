@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { api } from "@/trpc/react";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { toast } from "sonner";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form } from "@/components/ui/form";
@@ -39,8 +39,16 @@ export const DeleteContainer = ({
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {},
+    defaultValues: {
+      container: "/",
+    },
   });
+
+  useEffect(() => {
+    if (!hasItems) {
+      form.setValue("container", "/", { shouldValidate: true });
+    }
+  }, [hasItems, form]);
 
   const mutate = api.containers.delete.useMutation({
     onSuccess: () => {

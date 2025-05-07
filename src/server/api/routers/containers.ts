@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
-import { type Container, type DirectoryNode } from "@/server/db/schema";
 import { faker } from "@faker-js/faker";
 
 export const containerRouter = createTRPCRouter({
@@ -48,7 +47,7 @@ export const containerRouter = createTRPCRouter({
         containerId: z.number(),
       }),
     )
-    .query(async ({ ctx, input }): Promise<DirectoryNode> => {
+    .query(async ({ ctx, input }) => {
       return ctx.repos.containers.getDirectoryTree(input);
     }),
 
@@ -74,24 +73,10 @@ export const containerRouter = createTRPCRouter({
         const itemRepo = ctx.repos.items.withTransaction(tx);
         const containerRepo = ctx.repos.containers.withTransaction(tx);
 
-        const itemsToMove = await itemRepo.getAll({
+        await itemRepo.moveItemsToContainer({
           containerId: input.containerId,
+          newPathname: input.newPathname ?? "/",
         });
-
-        if (itemsToMove.length > 0) {
-          let newCont: Container | null = null;
-
-          if (input.newPathname !== "/") {
-            newCont = await containerRepo.ensurePathname({
-              pathname: input.newPathname ?? "",
-            });
-          }
-
-          await itemRepo.moveItemsToContainer({
-            itemIds: itemsToMove.map((item) => item.id),
-            containerId: newCont?.id ?? 0,
-          });
-        }
 
         return await containerRepo.delete(input).then((res) => ({
           message: res ? "Container deleted" : "Container not affected",

@@ -206,17 +206,38 @@ export default class ItemsRepository {
     });
   }
 
+  /**
+   * Moves items to a new container
+   * use this method with a transaction to ensure atomicity
+   */
   async moveItemsToContainer({
-    itemIds,
     containerId,
+    newPathname,
   }: {
-    itemIds: number[];
     containerId: number;
+    newPathname: string;
   }) {
+    const newCont = await this.containerRepo.ensurePathname({
+      pathname: newPathname,
+    });
+
+    if (!newCont) {
+      throw new Error(
+        `Expected to find item container but found none for: ${newPathname}`,
+      );
+    }
+
+    const itemsToMove = await this.getAll({ containerId });
+
+    if (itemsToMove.length === 0) {
+      return false;
+    }
+    const itemIds = itemsToMove.map((item) => item.id);
+
     return await this.db
       .update(items)
       .set({
-        containerId,
+        containerId: newCont.id,
       })
       .where(
         and(eq(items.userId, this.session.userId), inArray(items.id, itemIds)),

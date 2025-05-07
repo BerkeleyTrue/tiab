@@ -52,6 +52,21 @@ export const itemsRouter = createTRPCRouter({
       return ctx.repos.items.update(input);
     }),
 
+  moveItemsToContainer: publicProcedure
+    .input(
+      z.object({
+        containerId: z.number(),
+        newPathname: z.string(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.transaction(async (tx) => {
+        const itemRepo = ctx.repos.items.withTransaction(tx);
+
+        return itemRepo.moveItemsToContainer(input);
+      });
+    }),
+
   delete: publicProcedure
     .input(z.object({ itemId: z.number() }))
     .mutation(async ({ ctx, input }) => {

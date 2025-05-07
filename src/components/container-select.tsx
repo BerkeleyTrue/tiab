@@ -61,6 +61,16 @@ export function ContainerSelect<TFieldValues extends ContainerFieldValues>({
   const containerInputRef = useRef<HTMLInputElement>(null);
   const name = "container" as Path<TFieldValues>;
 
+  const innerSetValue = useCallback(
+    (val: string) => {
+      setValue(name, val as PathValue<TFieldValues, Path<TFieldValues>>, {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
+    },
+    [setValue],
+  );
+
   const containerValue: string = watch(name);
 
   const { data: containers, isLoading } =
@@ -85,19 +95,13 @@ export function ContainerSelect<TFieldValues extends ContainerFieldValues>({
       regenerate();
       // we are in the root container
       if (curr === "/") {
-        setValue(
-          name,
-          `/${value}/` as PathValue<TFieldValues, Path<TFieldValues>>,
-        );
+        innerSetValue(`/${value}/`);
         return;
       }
 
       // if no current search, add new segment
       if (curr.endsWith("/")) {
-        setValue(
-          name,
-          `${curr}${value}/` as PathValue<TFieldValues, Path<TFieldValues>>,
-        );
+        innerSetValue(`${curr}${value}/`);
         return;
       }
 
@@ -105,23 +109,14 @@ export function ContainerSelect<TFieldValues extends ContainerFieldValues>({
       const segments = curr.split("/").filter(Boolean);
       segments.pop();
       if (segments.length === 0) {
-        setValue(
-          name,
-          `/${value}/` as PathValue<TFieldValues, Path<TFieldValues>>,
-        );
+        innerSetValue(`/${value}/`);
         return;
       }
 
-      setValue(
-        name,
-        `/${segments.join("/")}/${value}/` as PathValue<
-          TFieldValues,
-          Path<TFieldValues>
-        >,
-      );
+      innerSetValue(`/${segments.join("/")}/${value}/`);
       return;
     },
-    [getValues, name, setValue, regenerate],
+    [getValues, name, innerSetValue, regenerate],
   );
 
   const handleCommandValueChange = useCallback(
@@ -134,19 +129,13 @@ export function ContainerSelect<TFieldValues extends ContainerFieldValues>({
       const curr: string = getValues(name);
       // we are at the root container
       if (curr === "/") {
-        setValue(
-          name,
-          `/${value}` as PathValue<TFieldValues, Path<TFieldValues>>,
-        );
+        innerSetValue(`/${value}`);
         return;
       }
 
       if (curr.endsWith("/")) {
         // starting new search
-        setValue(
-          name,
-          `${curr}${value}` as PathValue<TFieldValues, Path<TFieldValues>>,
-        );
+        innerSetValue(`${curr}${value}`);
         return;
       }
 
@@ -154,23 +143,14 @@ export function ContainerSelect<TFieldValues extends ContainerFieldValues>({
       const segments = curr.split("/").filter(Boolean);
       segments.pop();
       if (segments.length === 0) {
-        setValue(
-          name,
-          `/${value}` as PathValue<TFieldValues, Path<TFieldValues>>,
-        );
+        innerSetValue(`/${value}`);
         return;
       }
 
-      setValue(
-        name,
-        `/${segments.join("/")}/${value}` as PathValue<
-          TFieldValues,
-          Path<TFieldValues>
-        >,
-      );
+      innerSetValue(`/${segments.join("/")}/${value}`);
       return;
     },
-    [getValues, name, setValue],
+    [getValues, name, innerSetValue],
   );
 
   const handleCommandKeyDown = useCallback(
@@ -184,17 +164,11 @@ export function ContainerSelect<TFieldValues extends ContainerFieldValues>({
         segments.pop();
 
         if (segments.length === 0) {
-          setValue(name, "/" as PathValue<TFieldValues, Path<TFieldValues>>);
+          innerSetValue("/");
           return;
         }
 
-        setValue(
-          name,
-          `/${segments.join("/")}/` as PathValue<
-            TFieldValues,
-            Path<TFieldValues>
-          >,
-        );
+        innerSetValue(`/${segments.join("/")}/`);
         return;
       }
 
@@ -210,7 +184,7 @@ export function ContainerSelect<TFieldValues extends ContainerFieldValues>({
         return;
       }
     },
-    [getValues, name, onTabPress, setValue, regenerate],
+    [getValues, name, onTabPress, innerSetValue, regenerate],
   );
 
   return (
@@ -220,7 +194,10 @@ export function ContainerSelect<TFieldValues extends ContainerFieldValues>({
       render={({ field }) => (
         <FormItem>
           <FormLabel>Container</FormLabel>
-          <Popover open={!disabled && openPopover} onOpenChange={setOpenPopover}>
+          <Popover
+            open={!disabled && openPopover}
+            onOpenChange={setOpenPopover}
+          >
             <PopoverTrigger asChild>
               <FormControl>
                 <div className="relative">

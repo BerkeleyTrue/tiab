@@ -58,7 +58,7 @@ export const ItemView = ({ item }: { item: ItemWithPathname }) => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-2xl">
             <Package className="size-6" />
-            <span className="">{item.name}</span>
+            <span className="overflow-hidden text-ellipsis">{item.name}</span>
 
             {(item.count ?? 0) > 1 && (
               <Badge variant="secondary" className="size-8">

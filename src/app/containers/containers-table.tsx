@@ -291,8 +291,9 @@ export const ContainersTable = ({ tree }: { tree: DirectoryNode }) => {
               variant="secondary"
               disabled={data?.items?.length === 0}
               onClick={openMoveForm}
+              className="text-wrap overflow-hidden text-ellipsis"
             >
-              Move all Items to another container{" "}
+              Move Items {" "}
               {data.items?.length === 0 && "(No items to move)"}
             </Button>
             <Button
@@ -301,7 +302,7 @@ export const ContainersTable = ({ tree }: { tree: DirectoryNode }) => {
               onClick={openDeleteForm}
               disabled={data.parent.path === "/"}
             >
-              Delete Container{" "}
+              Delete {" "}
               {data.parent.path === "/" && "(Cannot delete Root)"}
             </Button>
           </div>

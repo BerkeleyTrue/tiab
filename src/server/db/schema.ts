@@ -9,6 +9,7 @@ import {
   sqliteView,
   integer,
   text,
+  primaryKey,
 } from "drizzle-orm/sqlite-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 
@@ -24,6 +25,19 @@ export const users = createTable("user", (d) => ({
 export const userRelationships = relations(users, ({ many }) => ({
   containers: many(containers),
   items: many(items),
+  tags: many(tags),
+}));
+
+// a tag can be used to categorize items and containers
+export const tags = createTable("tag", (d) => ({
+  id: d.integer({ mode: "number" }).primaryKey({ autoIncrement: true }),
+  name: d.text({ length: 256 }).notNull(),
+  userId: d.integer({ mode: "number" }).notNull(),
+  createdAt: d
+    .text()
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()), // When the fast record was created
+  updatedAt: d.text().$onUpdate(() => new Date().toISOString()), // When the fast record was last updated
 }));
 
 // a container contains items or other containers
@@ -49,11 +63,27 @@ export const containers = createTable(
     createdAt: d
       .text()
       .notNull()
-      .$defaultFn(() => new Date().toISOString()), // When the fast record was created
-    updatedAt: d.text().$onUpdate(() => new Date().toISOString()), // When the fast record was last updated
+      .$defaultFn(() => new Date().toISOString()),
+    updatedAt: d.text().$onUpdate(() => new Date().toISOString()),
   }),
   // a path and parent path index
   (t) => [uniqueIndex("path_parent_idx").on(t.path, t.parent)],
+);
+
+// a container can have many tags
+// a tag can have many containers
+export const containersToTags = createTable(
+  "containers_to_tags",
+  (d) => ({
+    containerId: d.integer({ mode: "number" }).notNull().references(() => containers.id),
+    tagId: d.integer({ mode: "number" }).notNull().references(() => tags.id),
+    createdAt: d
+      .text()
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+    updatedAt: d.text().$onUpdate(() => new Date().toISOString()),
+  }),
+  (t) => [primaryKey({ columns: [t.containerId, t.tagId] })],
 );
 
 // a container has one user
@@ -72,6 +102,21 @@ export const containerRelationships = relations(
       references: [containers.path],
     }),
     children: many(containers),
+    tags: many(containersToTags),
+  }),
+);
+
+export const containersToTagsRelationships = relations(
+  containersToTags,
+  ({ one }) => ({
+    tag: one(tags, {
+      fields: [containersToTags.tagId],
+      references: [tags.id],
+    }),
+    container: one(containers, {
+      fields: [containersToTags.containerId],
+      references: [containers.id],
+    }),
   }),
 );
 
@@ -116,9 +161,20 @@ export type ItemWithPathname = Item & {
   pathname: string;
 };
 
+// an item can have many tags
+export const itemsToTags = createTable("items_to_tags", (d) => ({
+  itemId: d.integer({ mode: "number" }).notNull().references(() => items.id),
+  tagId: d.integer({ mode: "number" }).notNull().references(() => tags.id),
+  createdAt: d
+    .text()
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+  updatedAt: d.text().$onUpdate(() => new Date().toISOString()),
+}), (t) => [primaryKey({ columns: [t.itemId, t.tagId] })]);
+
 // an item has one container
 // an item has one user
-export const itemRelationships = relations(items, ({ one }) => ({
+export const itemRelationships = relations(items, ({ one, many }) => ({
   container: one(containers, {
     fields: [items.containerId],
     references: [containers.id],
@@ -127,6 +183,14 @@ export const itemRelationships = relations(items, ({ one }) => ({
     fields: [items.userId],
     references: [users.id],
   }),
+  tags: many(itemsToTags),
+}));
+
+// a tag can have many items
+// a tag can have many containers
+export const tagsRelationships = relations(tags, ({ many }) => ({
+  containersToTags: many(containersToTags),
+  itemsToTags: many(itemsToTags),
 }));
 
 export const containersPathnameView = sqliteView("containers_pathname", {

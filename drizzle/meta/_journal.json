@@ -50,6 +50,13 @@
       "when": 1746824799821,
       "tag": "0006_minor_matthew_murdock",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1746829007526,
+      "tag": "0007_clear_hydra",
+      "breakpoints": true
     }
   ]
 }

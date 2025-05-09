@@ -25,19 +25,39 @@ export const users = createTable("user", (d) => ({
 export const userRelationships = relations(users, ({ many }) => ({
   containers: many(containers),
   items: many(items),
-  tags: many(tags),
+  tags: many(usersToTags),
 }));
 
-// a tag can be used to categorize items and containers
-export const tags = createTable("tag", (d) => ({
-  id: d.integer({ mode: "number" }).primaryKey({ autoIncrement: true }),
-  name: d.text({ length: 256 }).notNull(),
-  userId: d.integer({ mode: "number" }).notNull(),
-  createdAt: d
-    .text()
-    .notNull()
-    .$defaultFn(() => new Date().toISOString()), // When the fast record was created
-  updatedAt: d.text().$onUpdate(() => new Date().toISOString()), // When the fast record was last updated
+// Many-to-many relationship between users and tags
+export const usersToTags = createTable(
+  "users_to_tags",
+  (d) => ({
+    userId: d
+      .integer({ mode: "number" })
+      .notNull()
+      .references(() => users.id),
+    tagId: d
+      .integer({ mode: "number" })
+      .notNull()
+      .references(() => tags.id),
+    createdAt: d
+      .text()
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+    updatedAt: d.text().$onUpdate(() => new Date().toISOString()),
+  }),
+  (t) => [primaryKey({ columns: [t.userId, t.tagId] })],
+);
+
+export const usersToTagsRelationships = relations(usersToTags, ({ one }) => ({
+  user: one(users, {
+    fields: [usersToTags.userId],
+    references: [users.id],
+  }),
+  tag: one(tags, {
+    fields: [usersToTags.tagId],
+    references: [tags.id],
+  }),
 }));
 
 // a container contains items or other containers
@@ -70,22 +90,6 @@ export const containers = createTable(
   (t) => [uniqueIndex("path_parent_idx").on(t.path, t.parent)],
 );
 
-// a container can have many tags
-// a tag can have many containers
-export const containersToTags = createTable(
-  "containers_to_tags",
-  (d) => ({
-    containerId: d.integer({ mode: "number" }).notNull().references(() => containers.id),
-    tagId: d.integer({ mode: "number" }).notNull().references(() => tags.id),
-    createdAt: d
-      .text()
-      .notNull()
-      .$defaultFn(() => new Date().toISOString()),
-    updatedAt: d.text().$onUpdate(() => new Date().toISOString()),
-  }),
-  (t) => [primaryKey({ columns: [t.containerId, t.tagId] })],
-);
-
 // a container has one user
 // a user can have many containers
 // a container can have many items
@@ -104,6 +108,28 @@ export const containerRelationships = relations(
     children: many(containers),
     tags: many(containersToTags),
   }),
+);
+
+// a container can have many tags
+// a tag can have many containers
+export const containersToTags = createTable(
+  "containers_to_tags",
+  (d) => ({
+    containerId: d
+      .integer({ mode: "number" })
+      .notNull()
+      .references(() => containers.id),
+    tagId: d
+      .integer({ mode: "number" })
+      .notNull()
+      .references(() => tags.id),
+    createdAt: d
+      .text()
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+    updatedAt: d.text().$onUpdate(() => new Date().toISOString()),
+  }),
+  (t) => [primaryKey({ columns: [t.containerId, t.tagId] })],
 );
 
 export const containersToTagsRelationships = relations(
@@ -162,15 +188,25 @@ export type ItemWithPathname = Item & {
 };
 
 // an item can have many tags
-export const itemsToTags = createTable("items_to_tags", (d) => ({
-  itemId: d.integer({ mode: "number" }).notNull().references(() => items.id),
-  tagId: d.integer({ mode: "number" }).notNull().references(() => tags.id),
-  createdAt: d
-    .text()
-    .notNull()
-    .$defaultFn(() => new Date().toISOString()),
-  updatedAt: d.text().$onUpdate(() => new Date().toISOString()),
-}), (t) => [primaryKey({ columns: [t.itemId, t.tagId] })]);
+export const itemsToTags = createTable(
+  "items_to_tags",
+  (d) => ({
+    itemId: d
+      .integer({ mode: "number" })
+      .notNull()
+      .references(() => items.id),
+    tagId: d
+      .integer({ mode: "number" })
+      .notNull()
+      .references(() => tags.id),
+    createdAt: d
+      .text()
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+    updatedAt: d.text().$onUpdate(() => new Date().toISOString()),
+  }),
+  (t) => [primaryKey({ columns: [t.itemId, t.tagId] })],
+);
 
 // an item has one container
 // an item has one user
@@ -186,11 +222,28 @@ export const itemRelationships = relations(items, ({ one, many }) => ({
   tags: many(itemsToTags),
 }));
 
+// a tag can be used to categorize items and containers
+export const tags = createTable(
+  "tag",
+  (d) => ({
+    id: d.integer({ mode: "number" }).primaryKey({ autoIncrement: true }),
+    name: d.text({ length: 256 }).notNull(),
+    createdAt: d
+      .text()
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()), // When the fast record was created
+    updatedAt: d.text().$onUpdate(() => new Date().toISOString()), // When the fast record was last updated
+  }),
+  (t) => [uniqueIndex("tag_name_idx").on(t.name)],
+);
+
 // a tag can have many items
 // a tag can have many containers
+// a tag can have many users
 export const tagsRelationships = relations(tags, ({ many }) => ({
-  containersToTags: many(containersToTags),
-  itemsToTags: many(itemsToTags),
+  containers: many(containersToTags),
+  items: many(itemsToTags),
+  users: many(usersToTags),
 }));
 
 export const containersPathnameView = sqliteView("containers_pathname", {

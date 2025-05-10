@@ -1,6 +1,6 @@
 "use client";
 
-import type { DirectoryNode, Item } from "@/server/db/schema";
+import type { ItemSelect } from "@/server/db/schema";
 import { api } from "@/trpc/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -30,6 +30,7 @@ import { toast } from "sonner";
 import { useBoolean } from "@/hooks/use-boolean";
 import { DeleteContainer } from "./delete-container";
 import { MoveItems } from "./move-items";
+import type { DirectoryNode } from "@/types/dto";
 
 type TreeNodeProps = {
   node: DirectoryNode;
@@ -161,7 +162,7 @@ const TreeNode = ({ node, level }: TreeNodeProps) => {
   );
 };
 
-const ItemRow = ({ item, level }: { item: Item; level: number }) => {
+const ItemRow = ({ item, level }: { item: ItemSelect; level: number }) => {
   return (
     <Link
       className="flex items-center rounded-md px-2 py-1"
@@ -291,10 +292,9 @@ export const ContainersTable = ({ tree }: { tree: DirectoryNode }) => {
               variant="secondary"
               disabled={data?.items?.length === 0}
               onClick={openMoveForm}
-              className="text-wrap overflow-hidden text-ellipsis"
+              className="overflow-hidden text-wrap text-ellipsis"
             >
-              Move Items {" "}
-              {data.items?.length === 0 && "(No items to move)"}
+              Move Items {data.items?.length === 0 && "(No items to move)"}
             </Button>
             <Button
               variant="destructive"
@@ -302,8 +302,7 @@ export const ContainersTable = ({ tree }: { tree: DirectoryNode }) => {
               onClick={openDeleteForm}
               disabled={data.parent.path === "/"}
             >
-              Delete {" "}
-              {data.parent.path === "/" && "(Cannot delete Root)"}
+              Delete {data.parent.path === "/" && "(Cannot delete Root)"}
             </Button>
           </div>
         </CardContent>

@@ -149,7 +149,7 @@ export const containersToTagsRelationships = relations(
 const containerSelectSchema = createSelectSchema(containers); // eslint-disable-line @typescript-eslint/no-unused-vars
 const containerInsertSchema = createInsertSchema(containers); // eslint-disable-line @typescript-eslint/no-unused-vars
 
-export type Container = z.infer<typeof containerSelectSchema>;
+export type ContainerSelect = z.infer<typeof containerSelectSchema>;
 export type ContainerInsert = z.infer<typeof containerInsertSchema>;
 
 // an item is a thing that can be in a container
@@ -180,10 +180,10 @@ export const items = createTable(
 const itemSelectSchema = createSelectSchema(items); // eslint-disable-line @typescript-eslint/no-unused-vars
 const createItemSchema = createInsertSchema(items); // eslint-disable-line @typescript-eslint/no-unused-vars
 
-export type Item = z.infer<typeof itemSelectSchema>;
+export type ItemSelect = z.infer<typeof itemSelectSchema>;
 export type ItemInsert = z.infer<typeof createItemSchema>;
 
-export type ItemWithPathname = Item & {
+export type ItemWithPathname = ItemSelect & {
   pathname: string;
 };
 
@@ -286,7 +286,7 @@ ORDER BY pathname;
 `);
 
 export type DirectoryNode = {
-  parent: Container;
+  parent: ContainerSelect;
   items?: ItemWithPathname[];
   children: DirectoryNode[];
 };

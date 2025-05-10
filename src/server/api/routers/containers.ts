@@ -72,11 +72,29 @@ export const containerRouter = createTRPCRouter({
       return await ctx.db.transaction(async (tx) => {
         const itemRepo = ctx.repos.items.withTransaction(tx);
         const containerRepo = ctx.repos.containers.withTransaction(tx);
+        const itemCount = await itemRepo.getCount({ containerId: input.containerId });
 
-        await itemRepo.moveItemsToContainer({
-          containerId: input.containerId,
-          newPathname: input.newPathname ?? "/",
-        });
+        if (itemCount > 0) {
+
+          if (!input.newPathname) {
+            throw new Error("Container has items, please provide a new pathname");
+          }
+
+          const newCont = await containerRepo.ensurePathname({
+            pathname: input.newPathname.trim().toLowerCase().replace(/\s+/g, "_"),
+          });
+        
+          if (!newCont) {
+            throw new Error(
+              "Expected to find container for pathname but found none",
+            );
+          }
+
+          await itemRepo.moveItemsToContainer({
+            containerId: input.containerId,
+            newContainerId: newCont.id,
+          });
+        }
 
         return await containerRepo.delete(input).then((res) => ({
           message: res ? "Container deleted" : "Container not affected",

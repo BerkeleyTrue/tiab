@@ -1,67 +1,22 @@
 import {
   containers,
   containersPathnameView,
-  items,
-  type Container,
-  type DirectoryNode,
+  containersToTags,
+  tags,
+  type ContainerSelect,
 } from "@/server/db/schema";
-import { and, like, eq, getTableColumns } from "drizzle-orm";
+import { and, like, eq, getTableColumns, sql } from "drizzle-orm";
 import type { Db, Tx } from "@/server/db";
-
-export async function getDirectoryTree(
-  db: Tx,
-  parent: Container,
-  userId: number,
-): Promise<DirectoryNode> {
-  const res: DirectoryNode = {
-    parent,
-    items: [],
-    children: [],
-  };
-
-  const children = await db
-    .select()
-    .from(containers)
-    .where(
-      and(
-        eq(containers.parent, parent.path),
-        eq(containers.userId, userId),
-        eq(containers.isDeleted, false),
-      ),
-    )
-    .all();
-
-  res.items = await db
-    .select({
-      ...getTableColumns(items),
-      pathname: containersPathnameView.pathname,
-    })
-    .from(items)
-    .innerJoin(
-      containersPathnameView,
-      eq(items.containerId, containersPathnameView.id),
-    )
-    .where(
-      and(
-        eq(items.containerId, parent.id),
-        eq(items.userId, userId),
-        eq(items.isDeleted, false),
-      ),
-    )
-    .all();
-
-  for (const child of children) {
-    const childNode = await getDirectoryTree(db, child, userId);
-    res.children.push(childNode);
-  }
-
-  return res;
-}
+import type { ContainerDTO, DirectoryNode } from "@/types/dto";
+import type ItemsRepository from "./items";
+import type { TagsRepository } from "./tags";
 
 export class ContainerRepository {
   constructor(
     private db: Db | Tx,
     private session: { userId: number },
+    private itemsRepo: ItemsRepository,
+    private tagsRepo: TagsRepository,
   ) {}
 
   /**
@@ -71,13 +26,53 @@ export class ContainerRepository {
    * @returns A new ContainerRepository instance with the transaction
    */
   withTransaction(tx: Tx): ContainerRepository {
-    return new ContainerRepository(tx, this.session);
+    const tagsRepoWithTx = this.tagsRepo.withTransaction(tx);
+    const itemsRepoWithTx = this.itemsRepo.withTransaction(tx);
+
+    return new ContainerRepository(
+      tx,
+      this.session,
+      itemsRepoWithTx,
+      tagsRepoWithTx,
+    );
+  }
+
+  private async _getDirectoryTree(
+    parent: ContainerSelect,
+    userId: number,
+  ): Promise<DirectoryNode> {
+    const res: DirectoryNode = {
+      parent,
+      items: [],
+      children: [],
+    };
+
+    const children = await this.db
+      .select()
+      .from(containers)
+      .where(
+        and(
+          eq(containers.parent, parent.path),
+          eq(containers.userId, userId),
+          eq(containers.isDeleted, false),
+        ),
+      )
+      .all();
+
+    res.items = await this.itemsRepo.getAll({ containerId: parent.id });
+
+    for (const child of children) {
+      const childNode = await this._getDirectoryTree(child, userId);
+      res.children.push(childNode);
+    }
+
+    return res;
   }
 
   async create(input: {
     path: string;
     parent: string;
-  }): Promise<Container | null> {
+  }): Promise<ContainerDTO | null> {
     const res = await this.db
       .insert(containers)
       .values({
@@ -87,13 +82,22 @@ export class ContainerRepository {
       })
       .returning();
 
-    return res[0] ?? null;
+    const newContainer = res[0];
+
+    if (!newContainer) {
+      return null;
+    }
+
+    return {
+      ...newContainer,
+      tags: [],
+    };
   }
 
   async getById(input: {
     id: number;
     includeDeleted?: boolean;
-  }): Promise<Container | null> {
+  }): Promise<ContainerDTO | null> {
     const queries = [
       eq(containers.id, input.id),
       eq(containers.userId, this.session.userId),
@@ -104,19 +108,34 @@ export class ContainerRepository {
     }
 
     const res = await this.db
-      .select()
+      .select({
+        ...getTableColumns(containers),
+        tags: sql<string>`group_concat(${tags.name})`,
+      })
       .from(containers)
+      .leftJoin(
+        containersToTags,
+        eq(containersToTags.containerId, containers.id),
+      )
+      .leftJoin(tags, eq(tags.id, containersToTags.tagId))
       .where(and(...queries))
       .get();
 
-    return res ?? null;
+    if (!res) {
+      return null;
+    }
+
+    return {
+      ...res,
+      tags: res.tags.split(","),
+    };
   }
 
   async getByPath(input: {
     path: string;
     parent: string;
     includeDeleted?: boolean;
-  }): Promise<Container | null> {
+  }): Promise<ContainerDTO | null> {
     const queries = [
       eq(containers.path, input.path),
       eq(containers.parent, input.parent),
@@ -128,18 +147,33 @@ export class ContainerRepository {
     }
 
     const res = await this.db
-      .select()
+      .select({
+        ...getTableColumns(containers),
+        tags: sql<string>`group_concat(${tags.name})`,
+      })
       .from(containers)
+      .leftJoin(
+        containersToTags,
+        eq(containersToTags.containerId, containers.id),
+      )
+      .leftJoin(tags, eq(tags.id, containersToTags.tagId))
       .where(and(...queries))
       .get();
 
-    return res ?? null;
+    if (!res) {
+      return null;
+    }
+
+    return {
+      ...res,
+      tags: res.tags.split(","),
+    };
   }
 
   async getOrCreate(input: {
     path: string;
     parent: string;
-  }): Promise<Container | null> {
+  }): Promise<ContainerDTO | null> {
     const existingContainer = await this.getByPath({
       path: input.path,
       parent: input.parent,
@@ -169,7 +203,9 @@ export class ContainerRepository {
    * This method will create any missing containers in the hierarchy.
    * And will undelete any deleted containers in the hierarchy.
    */
-  async ensurePathname(input: { pathname: string }): Promise<Container | null> {
+  async ensurePathname(input: {
+    pathname: string;
+  }): Promise<ContainerSelect | null> {
     // Process container path and create container hierarchy
     const segments = input.pathname
       .split("/")
@@ -200,7 +236,7 @@ export class ContainerRepository {
     return containerBase;
   }
 
-  async search(input: { query: string }): Promise<Container[]> {
+  async search(input: { query: string }): Promise<ContainerSelect[]> {
     const segments = input.query.split("/").filter(Boolean);
 
     // root query
@@ -244,7 +280,7 @@ export class ContainerRepository {
   }): Promise<DirectoryNode> {
     return this.db.transaction(async (tx) => {
       // Handle root path specially
-      let parent: Container | undefined;
+      let parent: ContainerSelect | undefined;
       if (input.containerId === 0) {
         // Create a virtual root container
         parent = {
@@ -276,7 +312,7 @@ export class ContainerRepository {
         throw new Error("Container not found");
       }
 
-      return getDirectoryTree(tx, parent, this.session.userId);
+      return this._getDirectoryTree(parent, this.session.userId);
     });
   }
 
@@ -296,7 +332,7 @@ export class ContainerRepository {
     containerId: number;
     isPublic?: boolean;
     unDeleted?: boolean;
-  }): Promise<Container | null> {
+  }): Promise<ContainerDTO | null> {
     const res = await this.db
       .update(containers)
       .set({
@@ -317,7 +353,14 @@ export class ContainerRepository {
       return null;
     }
 
-    return updatedContainer;
+    return {
+      ...updatedContainer,
+      tags: (
+        (await this.tagsRepo.getTagsForContainer({
+          containerId: updatedContainer.id,
+        })) ?? []
+      ).map((tag) => tag.name),
+    };
   }
 
   async delete(input: { containerId: number }): Promise<boolean> {

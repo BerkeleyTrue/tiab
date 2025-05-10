@@ -13,11 +13,26 @@ export const itemsRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      return ctx.repos.items.create({
-        name: input.name.trim().toLowerCase().replace(/\s+/g, "_"),
-        container: input.container.trim().toLowerCase().replace(/\s+/g, "_"),
-        description: input.description,
-        count: input.count,
+      return await ctx.db.transaction(async (tx) => {
+        const containerRepo = ctx.repos.containers.withTransaction(tx);
+        const itemRepo = ctx.repos.items.withTransaction(tx);
+
+        const newCont = await containerRepo.ensurePathname({
+          pathname: input.container.trim().toLowerCase().replace(/\s+/g, "_"),
+        });
+
+        if (!newCont) {
+          throw new Error(
+            "Expected to find container for pathname but found none",
+          );
+        }
+
+        return itemRepo.create({
+          name: input.name.trim().toLowerCase().replace(/\s+/g, "_"),
+          description: input.description,
+          containerId: newCont.id,
+          count: input.count,
+        });
       });
     }),
 
@@ -49,7 +64,25 @@ export const itemsRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      return ctx.repos.items.update(input);
+      return await ctx.db.transaction(async (tx) => {
+        const containerRepo = ctx.repos.containers.withTransaction(tx);
+        const itemRepo = ctx.repos.items.withTransaction(tx);
+
+        const newCont = await containerRepo.ensurePathname({
+          pathname: input.container.trim().toLowerCase().replace(/\s+/g, "_"),
+        });
+
+        if (!newCont) {
+          throw new Error(
+            "Expected to find container for pathname but found none",
+          );
+        }
+
+        return itemRepo.update({
+          ...input,
+          containerId: newCont.id,
+        });
+      });
     }),
 
   moveItemsToContainer: publicProcedure
@@ -61,9 +94,23 @@ export const itemsRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       return ctx.db.transaction(async (tx) => {
+        const containerRepo = ctx.repos.containers.withTransaction(tx);
         const itemRepo = ctx.repos.items.withTransaction(tx);
 
-        return itemRepo.moveItemsToContainer(input);
+        const newCont = await containerRepo.ensurePathname({
+          pathname: input.newPathname.trim().toLowerCase().replace(/\s+/g, "_"),
+        });
+
+        if (!newCont) {
+          throw new Error(
+            "Expected to find container for pathname but found none",
+          );
+        }
+
+        return itemRepo.moveItemsToContainer({
+          containerId: input.containerId,
+          newContainerId: newCont.id,
+        });
       });
     }),
 

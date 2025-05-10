@@ -13,6 +13,7 @@ import { ZodError } from "zod";
 import { db } from "@/server/db";
 import { ContainerRepository } from "../repositories/containers";
 import ItemsRepository from "../repositories/items";
+import { TagsRepository } from "../repositories/tags";
 
 /**
  * 1. CONTEXT
@@ -27,8 +28,9 @@ import ItemsRepository from "../repositories/items";
  * @see https://trpc.io/docs/server/context
  */
 export const createTRPCContext = async (opts: { headers: Headers }) => {
-  const containers = new ContainerRepository(db, { userId: 1 });
-  const items = new ItemsRepository(db, { userId: 1 }, containers);
+  const tags = new TagsRepository(db, { userId: 1 });
+  const items = new ItemsRepository(db, { userId: 1 }, tags);
+  const containers = new ContainerRepository(db, { userId: 1 }, items, tags);
 
   return {
     db,
@@ -40,7 +42,8 @@ export const createTRPCContext = async (opts: { headers: Headers }) => {
     },
     repos: {
       containers,
-      items
+      items,
+      tags,
     },
   };
 };

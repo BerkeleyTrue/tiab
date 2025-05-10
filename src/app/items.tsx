@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { Container, ItemWithPathname } from "@/server/db/schema";
+import type { ContainerSelect, ItemWithPathname } from "@/server/db/schema";
 import {
   Card,
   CardAction,
@@ -41,14 +41,15 @@ import { useBoolean } from "@/hooks/use-boolean";
 import { Edit } from "lucide-react";
 import Link from "next/link";
 import { cn, pluralize } from "@/lib/utils";
+import type { ItemDTO } from "@/types/dto";
 
 export const ItemsTable = ({
   initItems,
   initContainer,
   className,
 }: {
-  initItems: ItemWithPathname[];
-  initContainer?: Container;
+  initItems: ItemDTO[];
+  initContainer?: ContainerSelect;
   className?: string;
 }) => {
   const utils = api.useUtils();

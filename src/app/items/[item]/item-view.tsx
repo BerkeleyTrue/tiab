@@ -20,7 +20,6 @@ import {
   Bomb,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import type { ItemWithPathname } from "@/server/db/schema";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { DeleteForm } from "./delete-popup";
@@ -29,8 +28,9 @@ import { useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { api } from "@/trpc/react";
+import type { ItemDTO } from "@/types/dto";
 
-export const ItemView = ({ item }: { item: ItemWithPathname }) => {
+export const ItemView = ({ item }: { item: ItemDTO }) => {
   const utils = api.useUtils();
   const router = useRouter();
 

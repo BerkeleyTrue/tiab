@@ -1,26 +1,27 @@
-import { and, eq, getTableColumns, inArray } from "drizzle-orm";
+import { and, count, eq, inArray, sql } from "drizzle-orm";
 import {
   items,
+  tags,
   containersPathnameView,
-  type ItemWithPathname,
   itemWithPathnameColumns,
+  itemsToTags,
 } from "@/server/db/schema";
 import type { Db, Tx } from "../db";
-import type { ContainerRepository } from "./containers";
+import type { ItemDTO } from "@/types/dto";
+import type { TagsRepository } from "./tags";
 
 export type CreateItemSchema = {
   name: string;
   description?: string;
   count?: number;
-  // The container path is a string that represents the hierarchy of containers
-  container: string;
+  containerId: number;
 };
 
 export default class ItemsRepository {
   constructor(
     private db: Db | Tx,
     private session: { userId: number },
-    private containerRepo: ContainerRepository,
+    private tagsRepo: TagsRepository,
   ) {}
 
   /**
@@ -30,50 +31,39 @@ export default class ItemsRepository {
    * @returns A new ItemsRepository instance with the transaction
    */
   withTransaction(tx: Tx): ItemsRepository {
-    // Create a new container repository with the transaction
-    const containerRepoWithTx = this.containerRepo.withTransaction(tx);
+    const tagsRepoWithTx = this.tagsRepo.withTransaction(tx);
 
     // Create a new items repository with the transaction and the container repository
-    return new ItemsRepository(tx, this.session, containerRepoWithTx);
+    return new ItemsRepository(tx, this.session, tagsRepoWithTx);
   }
 
-  async create(
-    input: CreateItemSchema & { container: string },
-  ): Promise<ItemWithPathname | null> {
-    return this.db.transaction(async (tx) => {
-      const containerTx = this.containerRepo.withTransaction(tx);
-      const containerBase = await containerTx.ensurePathname({
-        pathname: input.container,
-      });
+  /**
+   * Creates a new item
+   */
+  async create(input: CreateItemSchema): Promise<ItemDTO | null> {
+    const res = await this.db
+      .insert(items)
+      .values({
+        name: input.name,
+        userId: this.session.userId,
+        containerId: input.containerId,
+        description: input.description,
+        count: input.count,
+      })
+      .returning();
 
-      if (!containerBase) {
-        throw new Error(
-          `Expected to find item container but found none for: ${input.container}`,
-        );
-      }
+    const newItem = res[0];
 
-      const res = await tx
-        .insert(items)
-        .values({
-          name: input.name,
-          userId: this.session.userId,
-          containerId: containerBase.id,
-          description: input.description,
-          count: input.count,
-        })
-        .returning();
+    if (!newItem) {
+      return null;
+    }
 
-      const newItem = res[0];
-
-      if (!newItem) {
-        return null;
-      }
-
-      return {
-        ...newItem,
-        pathname: (await this.getPathname({ itemId: newItem.id })) ?? "",
-      };
-    });
+    return {
+      ...newItem,
+      pathname: (await this.getPathname({ itemId: newItem.id })) ?? "",
+      // TODO: fetch tags for the item
+      tags: [],
+    };
   }
 
   async getPathname(input: { itemId: number }): Promise<string | null> {
@@ -97,7 +87,7 @@ export default class ItemsRepository {
   async getById(input: {
     itemId: number;
     includeDeleted?: boolean;
-  }): Promise<ItemWithPathname | null> {
+  }): Promise<ItemDTO | null> {
     const queries = [
       eq(items.id, input.itemId),
       eq(items.userId, this.session.userId),
@@ -106,16 +96,29 @@ export default class ItemsRepository {
     if (input.includeDeleted !== true) {
       queries.push(eq(items.isDeleted, input.includeDeleted ?? false));
     }
+
     const res = await this.db
-      .select(itemWithPathnameColumns)
+      .select({
+        ...itemWithPathnameColumns,
+        tagsString: sql<string | null>`group_concat(${tags.name})`,
+      })
       .from(items)
       .innerJoin(
         containersPathnameView,
         eq(items.containerId, containersPathnameView.id),
       )
+      .innerJoin(itemsToTags, eq(itemsToTags.itemId, items.id))
+      .innerJoin(tags, eq(itemsToTags.tagId, tags.id))
       .where(and(...queries))
       .get();
-    return res ?? null;
+
+    if (!res) {
+      return null;
+    }
+    const tagList =
+      res.tagsString?.split(",").filter((tag) => tag !== "") ?? [];
+
+    return { ...res, tags: tagList };
   }
 
   async getAll({
@@ -124,7 +127,7 @@ export default class ItemsRepository {
   }: {
     containerId?: number;
     includeDeleted?: boolean;
-  }): Promise<ItemWithPathname[]> {
+  }): Promise<ItemDTO[]> {
     const queries = [eq(items.userId, this.session.userId)];
 
     if (containerId) {
@@ -135,87 +138,101 @@ export default class ItemsRepository {
       queries.push(eq(items.isDeleted, includeDeleted ?? false));
     }
 
-    return await this.db
+    const res = await this.db
       .select({
-        ...getTableColumns(items),
-        pathname: containersPathnameView.pathname,
+        ...itemWithPathnameColumns,
+        tagsString: sql<string | null>`group_concat(${tags.name})`,
       })
       .from(items)
       .innerJoin(
         containersPathnameView,
         eq(items.containerId, containersPathnameView.id),
       )
+      .innerJoin(itemsToTags, eq(itemsToTags.itemId, items.id))
+      .innerJoin(tags, eq(itemsToTags.tagId, tags.id))
       .where(and(...queries));
+
+    return res.map((item) => {
+      const tagList =
+        item.tagsString?.split(",").filter((tag) => tag !== "") ?? [];
+      return { ...item, tags: tagList };
+    });
+  }
+
+  async getCount(input: { containerId?: number }): Promise<number> {
+    const queries = [eq(items.userId, this.session.userId)];
+
+    if (input.containerId) {
+      queries.push(eq(items.containerId, input.containerId));
+    }
+
+    const countRes = await this.db
+      .select({ count: count() })
+      .from(items)
+      .where(and(...queries))
+      .get();
+
+    if (!countRes) {
+      return 0;
+    }
+
+    return countRes.count;
   }
 
   async update(input: {
     itemId: number;
-    container: string;
+    containerId: number;
     name?: string;
     description?: string;
     count?: number;
     isPublic?: boolean;
-  }): Promise<ItemWithPathname | null> {
-    return this.db.transaction(async (tx) => {
-      const itemRepo = this.withTransaction(tx);
-      const item = await itemRepo.getById({ itemId: input.itemId });
-      if (!item) {
-        throw new Error(`Item with ID ${input.itemId} not found`);
-      }
+  }): Promise<ItemDTO | null> {
+    const item = await this.getById({ itemId: input.itemId });
 
-      const containers = this.containerRepo.withTransaction(tx);
-      const containerBase = await containers.ensurePathname({
-        pathname: input.container,
-      });
+    if (!item) {
+      throw new Error(`Item with ID ${input.itemId} not found`);
+    }
 
-      if (!containerBase) {
-        throw new Error(
-          `Expected to find item container but found none for: ${input.container}`,
-        );
-      }
+    const res = await this.db
+      .update(items)
+      .set({
+        containerId: input.containerId,
+        userId: this.session.userId,
 
-      const res = await tx
-        .update(items)
-        .set({
-          containerId: containerBase.id,
-          userId: this.session.userId,
+        name: input.name ?? item.name,
+        isPublic: input.isPublic ?? item.isPublic ?? false,
+        description: input.description ?? item.description,
+        count: input.count ?? item.count,
+      })
+      .where(
+        and(eq(items.id, input.itemId), eq(items.userId, this.session.userId)),
+      )
+      .returning();
 
-          name: input.name ?? item.name,
-          isPublic: input.isPublic ?? item.isPublic ?? false,
-          description: input.description ?? item.description,
-          count: input.count ?? item.count,
-        })
-        .where(
-          and(
-            eq(items.id, input.itemId),
-            eq(items.userId, this.session.userId),
-          ),
-        )
-        .returning();
+    const newItem = res[0];
 
-      const newItem = res[0];
+    if (!newItem) {
+      return null;
+    }
 
-      if (!newItem) {
-        return null;
-      }
-
-      return {
-        ...newItem,
-        pathname: (await this.getPathname({ itemId: newItem.id })) ?? "",
-      };
-    });
+    return {
+      ...newItem,
+      pathname: (await this.getPathname({ itemId: newItem.id })) ?? "",
+      tags: (
+        (await this.tagsRepo.getTagsForItem({ itemId: newItem.id })) ?? []
+      ).map((tag) => tag.name),
+    };
   }
 
   /**
    * Moves items to a new container
-   * use this method with a transaction to ensure atomicity
    */
   async moveItemsToContainer({
     containerId,
-    newPathname,
+    newContainerId,
   }: {
     containerId: number;
-    newPathname: string;
+    newContainerId: number;
   }) {
     const itemsToMove = await this.getAll({ containerId });
 
@@ -223,22 +240,12 @@ export default class ItemsRepository {
       return false;
     }
 
-    const newCont = await this.containerRepo.ensurePathname({
-      pathname: newPathname,
-    });
-
-    if (!newCont) {
-      throw new Error(
-        `Expected to find item container but found none for: ${newPathname}`,
-      );
-    }
-
     const itemIds = itemsToMove.map((item) => item.id);
 
     return await this.db
       .update(items)
       .set({
-        containerId: newCont.id,
+        containerId: newContainerId,
       })
       .where(
         and(eq(items.userId, this.session.userId), inArray(items.id, itemIds)),

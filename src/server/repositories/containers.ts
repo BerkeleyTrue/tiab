@@ -110,15 +110,16 @@ export class ContainerRepository {
     const res = await this.db
       .select({
         ...getTableColumns(containers),
-        tags: sql<string>`group_concat(${tags.name})`,
+        tags: sql<string | null>`group_concat(${tags.name})`,
       })
       .from(containers)
+      .where(and(...queries))
       .leftJoin(
         containersToTags,
-        eq(containersToTags.containerId, containers.id),
+        eq(containers.id, containersToTags.containerId),
       )
-      .leftJoin(tags, eq(tags.id, containersToTags.tagId))
-      .where(and(...queries))
+      .leftJoin(tags, eq(containersToTags.tagId, tags.id))
+      .groupBy(containers.id)
       .get();
 
     if (!res) {
@@ -127,7 +128,7 @@ export class ContainerRepository {
 
     return {
       ...res,
-      tags: res.tags.split(","),
+      tags: (res.tags?.split(",") ?? []).filter((tag) => tag !== ""),
     };
   }
 
@@ -149,15 +150,15 @@ export class ContainerRepository {
     const res = await this.db
       .select({
         ...getTableColumns(containers),
-        tags: sql<string>`group_concat(${tags.name})`,
+        tags: sql<string | null>`group_concat(${tags.name})`,
       })
       .from(containers)
+      .where(and(...queries))
       .leftJoin(
         containersToTags,
-        eq(containersToTags.containerId, containers.id),
+        eq(containers.id, containersToTags.containerId),
       )
-      .leftJoin(tags, eq(tags.id, containersToTags.tagId))
-      .where(and(...queries))
+      .leftJoin(tags, eq(containersToTags.tagId, tags.id))
       .get();
 
     if (!res) {
@@ -166,7 +167,7 @@ export class ContainerRepository {
 
     return {
       ...res,
-      tags: res.tags.split(","),
+      tags: (res.tags?.split(",") ?? []).filter((tag) => tag !== ""),
     };
   }
 

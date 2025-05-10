@@ -103,18 +103,20 @@ export default class ItemsRepository {
         tagsString: sql<string | null>`group_concat(${tags.name})`,
       })
       .from(items)
+      .where(and(...queries))
       .innerJoin(
         containersPathnameView,
         eq(items.containerId, containersPathnameView.id),
       )
-      .innerJoin(itemsToTags, eq(itemsToTags.itemId, items.id))
-      .innerJoin(tags, eq(itemsToTags.tagId, tags.id))
-      .where(and(...queries))
+      .leftJoin(itemsToTags, eq(items.id, itemsToTags.itemId))
+      .leftJoin(tags, eq(itemsToTags.tagId, tags.id))
+      .groupBy(items.id)
       .get();
 
     if (!res) {
       return null;
     }
+
     const tagList =
       res.tagsString?.split(",").filter((tag) => tag !== "") ?? [];
 
@@ -144,18 +146,20 @@ export default class ItemsRepository {
         tagsString: sql<string | null>`group_concat(${tags.name})`,
       })
       .from(items)
+      .where(and(...queries))
       .innerJoin(
         containersPathnameView,
         eq(items.containerId, containersPathnameView.id),
       )
-      .innerJoin(itemsToTags, eq(itemsToTags.itemId, items.id))
-      .innerJoin(tags, eq(itemsToTags.tagId, tags.id))
-      .where(and(...queries));
+      .leftJoin(itemsToTags, eq(items.id, itemsToTags.itemId))
+      .leftJoin(tags, eq(itemsToTags.tagId, tags.id))
+      .groupBy(items.id);
 
-    return res.map((item) => {
-      const tagList =
-        item.tagsString?.split(",").filter((tag) => tag !== "") ?? [];
-      return { ...item, tags: tagList };
+    return res.map(({ tagsString, ...item}) => {
+      const tagsList =
+        tagsString?.split(",").filter((tag) => tag !== "") ?? [];
+
+      return { ...item, tags: tagsList };
     });
   }
 

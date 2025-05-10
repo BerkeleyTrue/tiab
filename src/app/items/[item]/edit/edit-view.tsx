@@ -25,22 +25,23 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import type { ItemWithPathname } from "@/server/db/schema";
 import { toast } from "sonner";
-import { ContainerSelect } from "@/components/container-select";
 import { Checkbox } from "@/components/ui/checkbox";
+import type { ItemDTO } from "@/types/dto";
+import { ContainerSelect } from "@/components/container-select";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().optional(),
   count: z.number().int().min(1, "Count must be at least 1"),
+  tags: z.array(z.string()).optional(),
   container: z.string().min(1, "Container is required"),
   isPublic: z.boolean().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
-export const EditItemForm = ({ item }: { item: ItemWithPathname }) => {
+export const EditItemForm = ({ item }: { item: ItemDTO }) => {
   const router = useRouter();
   const utils = api.useUtils();
   const nameInputRef = useRef<HTMLInputElement>(null);
@@ -53,6 +54,7 @@ export const EditItemForm = ({ item }: { item: ItemWithPathname }) => {
       count: item.count ?? 1,
       container: item.pathname,
       isPublic: item.isPublic ?? false,
+      tags: item.tags ?? [],
     },
   });
 

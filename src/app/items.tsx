@@ -25,7 +25,6 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { ContainerSelect, ItemWithPathname } from "@/server/db/schema";
 import {
   Card,
   CardAction,
@@ -41,7 +40,8 @@ import { useBoolean } from "@/hooks/use-boolean";
 import { Edit } from "lucide-react";
 import Link from "next/link";
 import { cn, pluralize } from "@/lib/utils";
-import type { ItemDTO } from "@/types/dto";
+import type { ContainerDTO, ItemDTO } from "@/types/dto";
+import { Badge } from "@/components/ui/badge";
 
 export const ItemsTable = ({
   initItems,
@@ -49,7 +49,7 @@ export const ItemsTable = ({
   className,
 }: {
   initItems: ItemDTO[];
-  initContainer?: ContainerSelect;
+  initContainer?: ContainerDTO;
   className?: string;
 }) => {
   const utils = api.useUtils();
@@ -83,7 +83,7 @@ export const ItemsTable = ({
     containerId: container?.id,
   });
 
-  const columns: ColumnDef<ItemWithPathname>[] = [
+  const columns: ColumnDef<ItemDTO>[] = [
     {
       accessorKey: "name",
       header: "Name",
@@ -93,12 +93,28 @@ export const ItemsTable = ({
       header: "Description",
     },
     {
-      accessorKey: "count",
-      header: "Count",
-    },
-    {
       accessorKey: "pathname",
       header: "Container",
+    },
+    {
+      accessorKey: "tags",
+      header: "Tags",
+      cell: ({ row }) => (
+        <div className="flex flex-wrap gap-1">
+          {row.getValue<string[]>("tags").map((tag) => (
+            <Badge
+              key={tag}
+              className="rounded bg-gray-200 px-2 py-1 text-sm text-gray-700"
+            >
+              {tag}
+            </Badge>
+          ))}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "count",
+      header: "Count",
     },
     {
       accessorKey: "createdAt",

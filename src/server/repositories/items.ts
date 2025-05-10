@@ -190,6 +190,7 @@ export default class ItemsRepository {
     description?: string;
     count?: number;
     isPublic?: boolean;
+    tags?: string[];
   }): Promise<ItemDTO | null> {
     const item = await this.getById({ itemId: input.itemId });
 

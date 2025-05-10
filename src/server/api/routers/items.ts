@@ -43,7 +43,7 @@ export const itemsRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      return ctx.repos.items.getAll(input);
+      return await ctx.repos.items.getAll(input);
     }),
 
   getById: publicProcedure
@@ -61,6 +61,7 @@ export const itemsRouter = createTRPCRouter({
         description: z.string().optional(),
         isPublic: z.boolean().optional(),
         count: z.number().optional(),
+        tags: z.array(z.string()).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {

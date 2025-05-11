@@ -1,5 +1,5 @@
 import { api } from "@/trpc/server";
-import { ContainersTable } from "../containers-table";
+import { ContainersView } from "../containers-view";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
 
@@ -21,14 +21,14 @@ export default async function Page({
 
   return (
     <>
-      <ContainersTable tree={tree} />
+      <ContainersView tree={tree} />
       {containerId === 0 && (
         <Alert variant="destructive">
           <AlertTriangle />
           <AlertTitle>Invalid Container ID</AlertTitle>
           <AlertDescription>
-            The container ID &apos;{containerIdParam}&apos; is not valid. Container IDs must
-            be numbers. Showing root instead.
+            The container ID &apos;{containerIdParam}&apos; is not valid.
+            Container IDs must be numbers. Showing root instead.
           </AlertDescription>
         </Alert>
       )}

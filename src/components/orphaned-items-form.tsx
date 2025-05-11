@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -9,19 +8,10 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Form } from "@/components/ui/form";
 import { toast } from "sonner";
 
 const formSchema = z.object({
@@ -35,9 +25,10 @@ interface OrphanedItemsFormProps {
   onSuccess?: () => void;
 }
 
-export function OrphanedItemsForm({ orphanedItems, onSuccess }: OrphanedItemsFormProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  
+export function OrphanedItemsForm({
+  orphanedItems,
+  onSuccess,
+}: OrphanedItemsFormProps) {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -56,9 +47,6 @@ export function OrphanedItemsForm({ orphanedItems, onSuccess }: OrphanedItemsFor
     onError: (error) => {
       toast.error(`Failed to move items: ${error.message}`);
     },
-    onSettled: () => {
-      setIsSubmitting(false);
-    },
   });
 
   const onSubmit = async (data: FormValues) => {
@@ -67,16 +55,10 @@ export function OrphanedItemsForm({ orphanedItems, onSuccess }: OrphanedItemsFor
       return;
     }
 
-    setIsSubmitting(true);
-    
-    try {
-      await moveItemsMutation.mutateAsync({
-        itemIds: orphanedItems.map(item => item.id),
-        container: data.container,
-      });
-    } catch (error) {
-      // Error is handled in the mutation callbacks
-    }
+    moveItemsMutation.mutate({
+      itemIds: orphanedItems.map((item) => item.id),
+      container: data.container,
+    });
   };
 
   if (orphanedItems.length === 0) {
@@ -85,7 +67,8 @@ export function OrphanedItemsForm({ orphanedItems, onSuccess }: OrphanedItemsFor
         <CardHeader>
           <CardTitle>Orphaned Items</CardTitle>
           <CardDescription>
-            No orphaned items found. All items are properly assigned to containers.
+            No orphaned items found. All items are properly assigned to
+            containers.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -97,19 +80,20 @@ export function OrphanedItemsForm({ orphanedItems, onSuccess }: OrphanedItemsFor
       <CardHeader>
         <CardTitle>Orphaned Items</CardTitle>
         <CardDescription>
-          {orphanedItems.length} item(s) found without a valid container. Select a destination container to move them.
+          {orphanedItems.length} item(s) found without a valid container. Select
+          a destination container to move them.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="mb-4">
-          <h3 className="text-sm font-medium mb-2">Items to move:</h3>
-          <ul className="list-disc pl-5 text-sm text-muted-foreground">
+          <h3 className="mb-2 text-sm font-medium">Items to move:</h3>
+          <ul className="text-muted-foreground list-disc pl-5 text-sm">
             {orphanedItems.map((item) => (
               <li key={item.id}>{item.name}</li>
             ))}
           </ul>
         </div>
-        
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <ContainerSelect
@@ -119,15 +103,17 @@ export function OrphanedItemsForm({ orphanedItems, onSuccess }: OrphanedItemsFor
               setValue={form.setValue}
               label="Destination Container"
               description="Select where to move the orphaned items"
-              disabled={isSubmitting}
+              disabled={moveItemsMutation.isPending}
             />
-            
-            <Button 
-              type="submit" 
+
+            <Button
+              type="submit"
               className="w-full"
-              disabled={isSubmitting || orphanedItems.length === 0}
+              disabled={
+                moveItemsMutation.isPending || orphanedItems.length === 0
+              }
             >
-              {isSubmitting ? "Moving Items..." : "Move Items"}
+              {moveItemsMutation.isPending ? "Moving Items..." : "Move Items"}
             </Button>
           </form>
         </Form>

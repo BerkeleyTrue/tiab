@@ -17,7 +17,7 @@ export function OrphanedItemsSection({ orphanedItems: initialOrphanedItems }: Or
   });
 
   const handleSuccess = async () => {
-    const { data } = await refetch();
+    const { data = [] } = await refetch();
     setOrphanedItems(data);
   };
 

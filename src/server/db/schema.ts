@@ -256,13 +256,13 @@ WITH RECURSIVE recur_pathname AS (
   SELECT
     id,
     path,
-    parent_id,
+    parentId,
     path AS pathname,
     0 AS depth
   FROM 
     ${containers}
   WHERE 
-    parent_id IS NULL
+    parentId IS NULL
 
   UNION ALL
 
@@ -270,13 +270,13 @@ WITH RECURSIVE recur_pathname AS (
   SELECT
     c.id,
     c.path,
-    c.parent_id,
+    c.parentId,
     rp.pathname || '/' || c.path AS pathname,
     rp.depth + 1 AS depth
   FROM 
     ${containers} c
   JOIN 
-    recur_pathname rp ON c.parent_id = rp.id
+    recur_pathname rp ON c.parentId = rp.id
 )
 SELECT
   id,

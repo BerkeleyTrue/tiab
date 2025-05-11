@@ -5,14 +5,7 @@ import {
   tags,
   type ContainerSelect,
 } from "@/server/db/schema";
-import {
-  and,
-  like,
-  eq,
-  getTableColumns,
-  sql,
-  isNull,
-} from "drizzle-orm";
+import { and, like, eq, getTableColumns, sql, isNull } from "drizzle-orm";
 import type { Db, Tx } from "@/server/db";
 import type { ContainerDTO, DirectoryNode } from "@/types/dto";
 import type ItemsRepository from "./items";
@@ -163,7 +156,7 @@ export class ContainerRepository {
       .leftJoin(tags, eq(containersToTags.tagId, tags.id))
       .get();
 
-    if (!res) {
+    if (!res?.id) {
       return null;
     }
 
@@ -283,19 +276,23 @@ export class ContainerRepository {
   async getChildren(input: {
     directoryId: number;
   }): Promise<ContainerDTO[]> {
+    const queries = [
+      eq(containers.userId, this.session.userId),
+      eq(containers.isDeleted, false),
+    ];
+    // zero is a special case for root containers
+    if (input.directoryId) {
+      queries.push(eq(containers.parentId, input.directoryId));
+    } else {
+      queries.push(isNull(containers.parentId));
+    }
     const res = await this.db
       .select({
         ...getTableColumns(containers),
         tags: sql<string | null>`group_concat(${tags.name})`,
       })
       .from(containers)
-      .where(
-        and(
-          eq(containers.parentId, input.directoryId),
-          eq(containers.userId, this.session.userId),
-          eq(containers.isDeleted, false),
-        ),
-      )
+      .where(and(...queries))
       .leftJoin(
         containersToTags,
         eq(containers.id, containersToTags.containerId),

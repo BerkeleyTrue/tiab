@@ -10,6 +10,7 @@ import { useBoolean } from "@/hooks/use-boolean";
 import { DeleteContainer } from "./delete-container";
 import { MoveItems } from "./move-items";
 import type { DirectoryNode } from "@/types/dto";
+import { AddContainer } from "./add-container";
 
 export const ContainerActions = ({ tree }: { tree: DirectoryNode }) => {
   const utils = api.useUtils();
@@ -23,6 +24,11 @@ export const ContainerActions = ({ tree }: { tree: DirectoryNode }) => {
     value: isMoveOpen,
     setFalse: closeMoveForm,
     setTrue: openMoveForm,
+  } = useBoolean(false);
+  const {
+    value: isAddOpen,
+    setFalse: closeAddForm,
+    setTrue: openAddForm,
   } = useBoolean(false);
 
   const handleDelete = useCallback(() => {
@@ -49,6 +55,14 @@ export const ContainerActions = ({ tree }: { tree: DirectoryNode }) => {
     }
   }, [closeMoveForm, tree.parent.id, router, utils, tree.items]);
 
+  const handleAdded = useCallback(() => {
+    closeAddForm();
+    toast.success("Container created successfully!");
+    void utils.containers.getDirectoryTree.invalidate({
+      containerId: tree.parent.id,
+    });
+  }, [closeAddForm, tree.parent.id, utils]);
+
   return (
     <>
       <Card className="col-span-2">
@@ -57,6 +71,13 @@ export const ContainerActions = ({ tree }: { tree: DirectoryNode }) => {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-2">
+            <Button
+              variant="secondary"
+              onClick={openAddForm}
+              className="overflow-hidden text-wrap text-ellipsis"
+            >
+              Add Container
+            </Button>
             <Button
               variant="secondary"
               disabled={tree?.items?.length === 0}
@@ -88,6 +109,13 @@ export const ContainerActions = ({ tree }: { tree: DirectoryNode }) => {
         containerId={tree.parent.id}
         onClose={closeMoveForm}
         onMove={handleItemsMoved}
+      />
+
+      <AddContainer
+        isOpen={isAddOpen}
+        onClose={closeAddForm}
+        onAdded={handleAdded}
+        basePathname={tree.parent.path}
       />
     </>
   );

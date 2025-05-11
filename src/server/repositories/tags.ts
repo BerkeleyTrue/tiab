@@ -1,4 +1,4 @@
-import { and, eq, getTableColumns, not, count } from "drizzle-orm";
+import { and, or, like, eq, getTableColumns, not, count } from "drizzle-orm";
 import {
   containers,
   containersToTags,
@@ -39,51 +39,52 @@ export class TagsRepository {
 
   /**
    * Creates a new tag and associates it with the current user
+   * If a tag with the same name already exists for this user, it returns that tag
+   * should be done in a transaction
    * @returns The created tag
    */
   async create(input: TagSchema) {
-    return this.db.transaction(async (tx) => {
-      // Check if tag with the same name already exists for this user
-      const existingTag = await tx
-        .select()
-        .from(tags)
-        .innerJoin(usersToTags, eq(tags.id, usersToTags.tagId))
-        .where(
-          and(
-            eq(tags.name, input.name),
-            eq(usersToTags.userId, this.session.userId),
-          ),
-        )
-        .get();
+    // Check if tag with the same name already exists for this user
+    const existingTag = await this.db
+      .select(getTableColumns(tags))
+      .from(tags)
+      .innerJoin(usersToTags, eq(tags.id, usersToTags.tagId))
+      .where(
+        and(
+          eq(tags.name, input.name),
+          eq(usersToTags.userId, this.session.userId),
+        ),
+      )
+      .get();
 
-      if (existingTag) {
-        throw new Error(
-          `Tag with name "${input.name}" already exists for this user`,
-        );
-      }
+    if (existingTag) {
+      return existingTag;
+    }
 
-      // Create the tag
-      const res = await tx
-        .insert(tags)
-        .values({
-          name: input.name,
-        })
-        .returning();
+    // Create the tag
+    const res = await this.db
+      .insert(tags)
+      .values({
+        name: input.name,
+      })
+      .returning();
 
-      const newTag = res[0];
+    const newTag = res[0];
 
-      if (!newTag) {
-        return null;
-      }
+    if (!newTag) {
+      return null;
+    }
 
-      // Associate the tag with the current user
-      await tx.insert(usersToTags).values({
+    // Associate the tag with the current user
+    await this.db
+      .insert(usersToTags)
+      .values({
         tagId: newTag.id,
         userId: this.session.userId,
-      });
+      })
+      .onConflictDoNothing();
 
-      return newTag;
-    });
+    return newTag;
   }
 
   /**
@@ -106,9 +107,7 @@ export class TagsRepository {
    */
   async getById(input: { tagId: number }) {
     return await this.db
-      .select({
-        ...getTableColumns(tags),
-      })
+      .select()
       .from(tags)
       .innerJoin(usersToTags, eq(tags.id, usersToTags.tagId))
       .where(
@@ -118,6 +117,19 @@ export class TagsRepository {
         ),
       )
       .get();
+  }
+
+  async search(input: { query: string }) {
+    return await this.db
+      .select(getTableColumns(tags))
+      .from(tags)
+      .innerJoin(usersToTags, eq(tags.id, usersToTags.tagId))
+      .where(
+        and(
+          eq(usersToTags.userId, this.session.userId),
+          or(eq(tags.name, input.query), like(tags.name, `%${input.query}%`)),
+        ),
+      );
   }
 
   /**
@@ -329,5 +341,32 @@ export class TagsRepository {
       .innerJoin(containersToTags, eq(tags.id, containersToTags.tagId))
       .innerJoin(containers, eq(containers.id, containersToTags.containerId))
       .where(eq(containers.id, input.containerId));
+  }
+
+  /**
+   * Assigns many tags to an item
+   * @returns True if the tag was assigned, false otherwise
+   */
+  async assignTagsToItem(input: { tags: string[]; itemId: number }) {
+    const tags = await Promise.all(
+      input.tags.map((tag) => this.create({ name: tag })),
+    );
+
+    const newTags = tags.filter((tag) => tag !== null);
+
+    const res = await this.db
+      .insert(itemsToTags)
+      .values(
+        tags
+          .filter((tag) => tag !== null)
+          .map((tag) => ({
+            tagId: tag.id,
+            itemId: input.itemId,
+          })),
+      )
+      .onConflictDoNothing()
+      .returning();
+
+    return res.length > 0;
   }
 }

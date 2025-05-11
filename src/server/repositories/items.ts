@@ -155,9 +155,8 @@ export default class ItemsRepository {
       .leftJoin(tags, eq(itemsToTags.tagId, tags.id))
       .groupBy(items.id);
 
-    return res.map(({ tagsString, ...item}) => {
-      const tagsList =
-        tagsString?.split(",").filter((tag) => tag !== "") ?? [];
+    return res.map(({ tagsString, ...item }) => {
+      const tagsList = tagsString?.split(",").filter((tag) => tag !== "") ?? [];
 
       return { ...item, tags: tagsList };
     });
@@ -183,6 +182,11 @@ export default class ItemsRepository {
     return countRes.count;
   }
 
+  /**
+   * Updates an item
+   * should be done in a transaction
+   * @returns The updated item
+   */
   async update(input: {
     itemId: number;
     containerId: number;
@@ -219,6 +223,12 @@ export default class ItemsRepository {
     if (!newItem) {
       return null;
     }
+
+    // Update tags
+    await this.tagsRepo.assignTagsToItem({
+      itemId: newItem.id,
+      tags: input.tags ?? [],
+    });
 
     return {
       ...newItem,

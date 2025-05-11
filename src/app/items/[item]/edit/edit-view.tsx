@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 import { api } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,7 @@ import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { ItemDTO } from "@/types/dto";
 import { ContainerSelect } from "@/components/container-select";
+import MultipleSelector, { type Option } from "@/components/ui/multi-select";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -142,6 +143,45 @@ export const EditItemForm = ({ item }: { item: ItemDTO }) => {
                   </FormControl>
                   <FormDescription>
                     Optional details about your item
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="tags"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tags</FormLabel>
+                  <FormControl>
+                    <MultipleSelector
+                      creatable
+                      onSearch={async (search) => {
+                        const tags = await utils.tags.search.fetch({
+                          query: search,
+                        });
+                        return tags.map((tag) => ({
+                          label: tag.name,
+                          value: tag.name,
+                        }));
+                      }}
+                      value={(field.value ?? []).map((tag) => ({
+                        label: tag,
+                        value: tag,
+                      }))}
+                      onChange={(value) =>
+                        field.onChange(
+                          value.map((o) => o.value),
+                          { shouldValidate: true, shouldDirty: true },
+                        )
+                      }
+                      placeholder="Select or create tags"
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Add tags to categorize your item
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

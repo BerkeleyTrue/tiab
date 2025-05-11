@@ -10,6 +10,8 @@ export const itemsRouter = createTRPCRouter({
         container: z.string().min(1),
         description: z.string().optional(),
         count: z.number().optional().default(1),
+        isPublic: z.boolean().optional(),
+        tags: z.array(z.string()).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -32,6 +34,8 @@ export const itemsRouter = createTRPCRouter({
           description: input.description,
           containerId: newCont.id,
           count: input.count,
+          isPublic: input.isPublic,
+          tags: input.tags,
         });
       });
     }),

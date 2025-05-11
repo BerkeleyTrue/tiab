@@ -10,13 +10,6 @@ import type { Db, Tx } from "../db";
 import type { ItemDTO } from "@/types/dto";
 import type { TagsRepository } from "./tags";
 
-export type CreateItemSchema = {
-  name: string;
-  description?: string;
-  count?: number;
-  containerId: number;
-};
-
 export default class ItemsRepository {
   constructor(
     private db: Db | Tx,
@@ -40,7 +33,14 @@ export default class ItemsRepository {
   /**
    * Creates a new item
    */
-  async create(input: CreateItemSchema): Promise<ItemDTO | null> {
+  async create(input: {
+    name: string;
+    description?: string;
+    count?: number;
+    containerId: number;
+    isPublic?: boolean;
+    tags?: string[];
+  }): Promise<ItemDTO | null> {
     const res = await this.db
       .insert(items)
       .values({
@@ -49,6 +49,7 @@ export default class ItemsRepository {
         containerId: input.containerId,
         description: input.description,
         count: input.count,
+        isPublic: input.isPublic ?? false,
       })
       .returning();
 
@@ -58,11 +59,18 @@ export default class ItemsRepository {
       return null;
     }
 
+    // Update tags
+    await this.tagsRepo.assignTagsToItem({
+      itemId: newItem.id,
+      tags: input.tags ?? [],
+    });
+
     return {
       ...newItem,
       pathname: (await this.getPathname({ itemId: newItem.id })) ?? "",
-      // TODO: fetch tags for the item
-      tags: [],
+      tags: (
+        (await this.tagsRepo.getTagsForItem({ itemId: newItem.id })) ?? []
+      ).map((tag) => tag.name),
     };
   }
 

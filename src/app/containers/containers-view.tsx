@@ -13,7 +13,7 @@ import { MoveItems } from "./move-items";
 import type { DirectoryNode } from "@/types/dto";
 import { DirectoryTree } from "./directory-tree";
 
-export const ContainersTable = ({ tree }: { tree: DirectoryNode }) => {
+export const ContainersView = ({ tree }: { tree: DirectoryNode }) => {
   const utils = api.useUtils();
   const router = useRouter();
   const {

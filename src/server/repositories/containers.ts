@@ -5,7 +5,14 @@ import {
   tags,
   type ContainerSelect,
 } from "@/server/db/schema";
-import { and, like, eq, getTableColumns, sql } from "drizzle-orm";
+import {
+  and,
+  like,
+  eq,
+  getTableColumns,
+  sql,
+  isNull,
+} from "drizzle-orm";
 import type { Db, Tx } from "@/server/db";
 import type { ContainerDTO, DirectoryNode } from "@/types/dto";
 import type ItemsRepository from "./items";
@@ -38,7 +45,7 @@ export class ContainerRepository {
   }
 
   private async _getDirectoryTree(
-    parent: ContainerSelect,
+    parent: ContainerDTO,
     userId: number,
   ): Promise<DirectoryNode> {
     const res: DirectoryNode = {
@@ -47,17 +54,7 @@ export class ContainerRepository {
       children: [],
     };
 
-    const children = await this.db
-      .select()
-      .from(containers)
-      .where(
-        and(
-          eq(containers.parent, parent.path),
-          eq(containers.userId, userId),
-          eq(containers.isDeleted, false),
-        ),
-      )
-      .all();
+    const children = await this.getChildren({ directoryId: parent.id });
 
     res.items = await this.itemsRepo.getAll({ containerId: parent.id });
 
@@ -71,13 +68,13 @@ export class ContainerRepository {
 
   async create(input: {
     path: string;
-    parent: string;
+    parentId: number | null;
   }): Promise<ContainerDTO | null> {
     const res = await this.db
       .insert(containers)
       .values({
         path: input.path,
-        parent: input.parent,
+        parentId: input.parentId,
         userId: this.session.userId,
       })
       .returning();
@@ -134,14 +131,19 @@ export class ContainerRepository {
 
   async getByPath(input: {
     path: string;
-    parent: string;
+    parentId: number | null;
     includeDeleted?: boolean;
   }): Promise<ContainerDTO | null> {
     const queries = [
       eq(containers.path, input.path),
-      eq(containers.parent, input.parent),
       eq(containers.userId, this.session.userId),
     ];
+    if (input.parentId) {
+      queries.push(eq(containers.parentId, input.parentId));
+    } else {
+      // if no parentId is provided, we want to check for root containers
+      queries.push(isNull(containers.parentId));
+    }
 
     if (input.includeDeleted !== true) {
       queries.push(eq(containers.isDeleted, input.includeDeleted ?? false));
@@ -173,20 +175,17 @@ export class ContainerRepository {
 
   async getOrCreate(input: {
     path: string;
-    parent: string;
+    parentId: number | null;
   }): Promise<ContainerDTO | null> {
     const existingContainer = await this.getByPath({
       path: input.path,
-      parent: input.parent,
+      parentId: input.parentId,
       includeDeleted: true,
     });
 
     // If container doesn't exist, create it
     if (!existingContainer) {
-      return await this.create({
-        path: input.path,
-        parent: input.parent,
-      });
+      return await this.create(input);
     }
 
     if (existingContainer.isDeleted) {
@@ -220,21 +219,15 @@ export class ContainerRepository {
       };
     });
 
+    let parent: ContainerDTO | null = null;
     for (const ancestor of containerAncestry) {
-      await this.getOrCreate({
+      parent = await this.getOrCreate({
         path: ancestor.path,
-        parent: ancestor.parent,
+        parentId: parent?.id ?? null,
       });
     }
 
-    const itemContainer = containerAncestry[containerAncestry.length - 1];
-
-    const containerBase = await this.getByPath({
-      path: itemContainer?.path ?? "",
-      parent: itemContainer?.parent ?? "",
-    });
-
-    return containerBase;
+    return parent;
   }
 
   async search(input: { query: string }): Promise<ContainerSelect[]> {
@@ -242,27 +235,38 @@ export class ContainerRepository {
 
     // root query
     let query = "";
-    let parent = "/";
-
-    if (input.query !== "/") {
-      // "/abc/" or "/abc/def/"
-      if (input.query.endsWith("/")) {
-        parent = segments.pop() ?? "/";
-        // "/abc" or "/abc/def"
-      } else {
-        // we have a search query
-        parent = segments[segments.length - 2] ?? "/";
-        query = segments.pop() ?? "-1";
-      }
-    }
 
     const queries = [
-      eq(containers.parent, parent),
       eq(containers.userId, this.session.userId),
       eq(containers.isDeleted, false),
     ];
 
-    if (query?.length) {
+    if (input.query !== "/") {
+      let pathname = "";
+      // "/abc/" or "/abc/def/"
+      if (input.query.endsWith("/")) {
+        pathname = input.query.slice(0, -1);
+        // "/abc" or "/abc/def"
+      } else {
+        // we have a search query
+        query = segments.pop() ?? "-1";
+        pathname = segments.join("/");
+      }
+      const parent = await this.ensurePathname({
+        pathname,
+      });
+
+      if (!parent) {
+        return [];
+      }
+
+      queries.push(eq(containers.parentId, parent.id));
+    } else {
+      // find all root containers
+      queries.push(isNull(containers.parentId));
+    }
+
+    if (query.length > 0) {
       queries.push(like(containers.path, `%${query}%`));
     }
 
@@ -276,44 +280,66 @@ export class ContainerRepository {
     return res;
   }
 
+  async getChildren(input: {
+    directoryId: number;
+  }): Promise<ContainerDTO[]> {
+    const res = await this.db
+      .select({
+        ...getTableColumns(containers),
+        tags: sql<string | null>`group_concat(${tags.name})`,
+      })
+      .from(containers)
+      .where(
+        and(
+          eq(containers.parentId, input.directoryId),
+          eq(containers.userId, this.session.userId),
+          eq(containers.isDeleted, false),
+        ),
+      )
+      .leftJoin(
+        containersToTags,
+        eq(containers.id, containersToTags.containerId),
+      )
+      .leftJoin(tags, eq(containersToTags.tagId, tags.id))
+      .groupBy(containers.id)
+      .all();
+
+    return res.map((res) => ({
+      ...res,
+      tags: (res.tags?.split(",") ?? []).filter((tag) => tag !== ""),
+    }));
+  }
+
   async getDirectoryTree(input: {
     containerId: number;
   }): Promise<DirectoryNode> {
     return this.db.transaction(async (tx) => {
+      const repo = this.withTransaction(tx);
       // Handle root path specially
-      let parent: ContainerSelect | undefined;
+      let parent: ContainerDTO | null;
       if (input.containerId === 0) {
         // Create a virtual root container
         parent = {
           id: 0,
           path: "/",
-          parent: "",
+          parentId: null,
           isDeleted: false,
           isPublic: true,
           userId: this.session.userId,
           createdAt: new Date().toISOString(),
           updatedAt: null,
+          tags: [],
         };
       } else {
         // Non-root path handling
-        parent = await tx
-          .select()
-          .from(containers)
-          .where(
-            and(
-              eq(containers.id, input.containerId),
-              eq(containers.userId, this.session.userId),
-              eq(containers.isDeleted, false),
-            ),
-          )
-          .get();
+        parent = await repo.getById({ id: input.containerId });
       }
 
       if (!parent) {
         throw new Error("Container not found");
       }
 
-      return this._getDirectoryTree(parent, this.session.userId);
+      return repo._getDirectoryTree(parent, this.session.userId);
     });
   }
 

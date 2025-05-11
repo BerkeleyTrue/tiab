@@ -10,7 +10,7 @@ export type ItemDTO = ItemSelect & {
 };
 
 export type DirectoryNode = {
-  parent: ContainerSelect;
+  parent: ContainerDTO;
   items?: ItemDTO[];
   children: DirectoryNode[];
 };

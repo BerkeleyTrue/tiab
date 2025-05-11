@@ -8,17 +8,6 @@ export const containerRouter = createTRPCRouter({
     return name;
   }),
 
-  create: publicProcedure
-    .input(
-      z.object({
-        path: z.string().min(1),
-        parent: z.string().min(1),
-      }),
-    )
-    .mutation(async ({ ctx, input }) => {
-      return await ctx.repos.containers.create(input);
-    }),
-
   getById: publicProcedure
     .input(
       z.object({

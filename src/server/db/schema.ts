@@ -10,6 +10,7 @@ import {
   integer,
   text,
   primaryKey,
+  type AnySQLiteColumn,
 } from "drizzle-orm/sqlite-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 
@@ -76,7 +77,7 @@ export const containers = createTable(
   (d) => ({
     id: d.integer({ mode: "number" }).primaryKey({ autoIncrement: true }),
     path: d.text({ length: 256 }).notNull(),
-    parent: d.text({ length: 256 }).notNull(),
+    parentId: d.integer({ mode: "number" }).references((): AnySQLiteColumn => containers.id),
     userId: d.integer({ mode: "number" }).notNull(),
     isPublic: d.integer({ mode: "boolean" }).default(false), // 0 = private, 1 = public
     isDeleted: d.integer({ mode: "boolean" }).default(false), // 0 = not deleted, 1 = deleted
@@ -87,7 +88,7 @@ export const containers = createTable(
     updatedAt: d.text().$onUpdate(() => new Date().toISOString()),
   }),
   // a path and parent path index
-  (t) => [uniqueIndex("path_parent_idx").on(t.path, t.parent)],
+  (t) => [uniqueIndex("path_parent_id_idx").on(t.path, t.parentId)],
 );
 
 // a container has one user
@@ -102,8 +103,8 @@ export const containerRelationships = relations(
     }),
     items: many(items),
     parent: one(containers, {
-      fields: [containers.parent],
-      references: [containers.path],
+      fields: [containers.parentId],
+      references: [containers.id],
     }),
     children: many(containers),
     tags: many(containersToTags),
@@ -251,37 +252,36 @@ export const containersPathnameView = sqliteView("containers_pathname", {
   pathname: text("pathname").notNull(),
 }).as(sql`
 WITH RECURSIVE recur_pathname AS (
-  -- Base case: Start with the target container
-  SELECT 
+  -- Base case: top-level containers (no parent)
+  SELECT
     id,
     path,
-    parent,
-    path as pathname,
+    parent_id,
+    path AS pathname,
     0 AS depth
   FROM 
     ${containers}
   WHERE 
-    parent = '/'
-  
+    parent_id IS NULL
+
   UNION ALL
-  
-  -- Recursive case: Get the parent container
-  SELECT 
+
+  -- Recursive case: add child containers to the path
+  SELECT
     c.id,
     c.path,
-    c.parent,
+    c.parent_id,
     rp.pathname || '/' || c.path AS pathname,
     rp.depth + 1 AS depth
   FROM 
     ${containers} c
   JOIN 
-    recur_pathname rp ON c.parent = rp.path
-)    
--- Select all containers in the path ordered from root to target
-SELECT 
+    recur_pathname rp ON c.parent_id = rp.id
+)
+SELECT
   id,
-  '/' || pathname as pathname
-FROM recur_pathname 
+  '/' || pathname AS pathname
+FROM recur_pathname
 ORDER BY pathname;
 `);
 

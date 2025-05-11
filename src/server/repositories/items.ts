@@ -1,10 +1,19 @@
-import { and, count, eq, inArray, sql } from "drizzle-orm";
+import {
+  and,
+  count,
+  eq,
+  inArray,
+  notInArray,
+  isNotNull,
+  sql,
+} from "drizzle-orm";
 import {
   items,
   tags,
   containersPathnameView,
   itemWithPathnameColumns,
   itemsToTags,
+  containers,
 } from "@/server/db/schema";
 import type { Db, Tx } from "../db";
 import type { ItemDTO } from "@/types/dto";
@@ -112,7 +121,7 @@ export default class ItemsRepository {
       })
       .from(items)
       .where(and(...queries))
-      .innerJoin(
+      .leftJoin(
         containersPathnameView,
         eq(items.containerId, containersPathnameView.id),
       )
@@ -128,7 +137,11 @@ export default class ItemsRepository {
     const tagList =
       res.tagsString?.split(",").filter((tag) => tag !== "") ?? [];
 
-    return { ...res, tags: tagList };
+    return {
+      ...res,
+      tags: tagList,
+      pathname: res.pathname ?? "/", // Ensure pathname is always a string
+    };
   }
 
   async getAll({
@@ -290,5 +303,31 @@ export default class ItemsRepository {
       )
       .returning()
       .then((res) => res.length > 0);
+  }
+
+  /**
+   * Orphan items that are not in any container or a deleted container
+   * @returns ItemDTO[]
+   */
+  async orphaned() {
+    const allContainerIdsSq = this.db
+      .select({ id: containers.id })
+      .from(containers);
+    // get all items in containers that do not exist
+    const itemsInDeletedContainers = await this.db
+      .select({
+        id: items.id,
+        name: items.name,
+      })
+      .from(items)
+      .where(
+        and(
+          isNotNull(items.containerId),
+          notInArray(items.containerId, allContainerIdsSq),
+          eq(items.isDeleted, false),
+        ),
+      );
+
+    return itemsInDeletedContainers;
   }
 }

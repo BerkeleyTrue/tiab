@@ -348,6 +348,9 @@ export class TagsRepository {
    * @returns True if the tag was assigned, false otherwise
    */
   async assignTagsToItem(input: { tags: string[]; itemId: number }) {
+    if (input.tags.length === 0) {
+      return false;
+    }
     const tags = await Promise.all(
       input.tags.map((tag) => this.create({ name: tag })),
     );

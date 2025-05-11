@@ -1,6 +1,10 @@
 import { z } from "zod";
 
-import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
+import {
+  createTRPCRouter,
+  publicProcedure,
+  protectedProcedure,
+} from "@/server/api/trpc";
 
 export const itemsRouter = createTRPCRouter({
   create: publicProcedure
@@ -55,6 +59,10 @@ export const itemsRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       return await ctx.repos.items.getById({ itemId: input.itemId });
     }),
+
+  orphaned: protectedProcedure.query(async ({ ctx }) => {
+    return await ctx.repos.items.orphaned();
+  }),
 
   update: publicProcedure
     .input(
@@ -116,6 +124,41 @@ export const itemsRouter = createTRPCRouter({
           containerId: input.containerId,
           newContainerId: newCont.id,
         });
+      });
+    }),
+
+  moveOrphanedItems: protectedProcedure
+    .input(
+      z.object({
+        itemIds: z.array(z.number()),
+        container: z.string(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.transaction(async (tx) => {
+        const containerRepo = ctx.repos.containers.withTransaction(tx);
+        const itemRepo = ctx.repos.items.withTransaction(tx);
+
+        // Ensure the container exists
+        const container = await containerRepo.ensurePathname({
+          pathname: input.container.trim().toLowerCase().replace(/\s+/g, "_"),
+        });
+
+        if (!container) {
+          throw new Error(`Container not found: ${input.container}`);
+        }
+
+        // Move each item to the container
+        const results = await Promise.all(
+          input.itemIds.map(itemId => 
+            itemRepo.update({
+              itemId,
+              containerId: container.id,
+            })
+          )
+        );
+
+        return results.every(result => result !== null);
       });
     }),
 

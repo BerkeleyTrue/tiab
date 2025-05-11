@@ -352,8 +352,6 @@ export class TagsRepository {
       input.tags.map((tag) => this.create({ name: tag })),
     );
 
-    const newTags = tags.filter((tag) => tag !== null);
-
     const res = await this.db
       .insert(itemsToTags)
       .values(

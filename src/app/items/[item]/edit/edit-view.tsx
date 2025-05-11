@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef } from "react";
 import { api } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +29,7 @@ import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { ItemDTO } from "@/types/dto";
 import { ContainerSelect } from "@/components/container-select";
-import MultipleSelector, { type Option } from "@/components/ui/multi-select";
+import MultipleSelector from "@/components/ui/multi-select";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),

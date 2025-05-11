@@ -108,6 +108,16 @@ export const ItemView = ({ item }: { item: ItemDTO }) => {
               No description provided
             </p>
           )}
+
+          {item.tags.length > 0 && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {item.tags.map((tag) => (
+                <Badge key={tag} variant="secondary">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          )}
         </CardContent>
 
         <CardFooter className="text-muted-foreground flex justify-between text-sm">

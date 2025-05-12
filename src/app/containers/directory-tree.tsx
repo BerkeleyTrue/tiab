@@ -24,7 +24,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { DirectoryNode } from "@/types/dto";
-import { api } from "@/trpc/react";
 
 type TreeNodeProps = {
   node: DirectoryNode;
@@ -176,12 +175,8 @@ const ItemRow = ({ item, level }: { item: ItemSelect; level: number }) => {
 };
 
 export const DirectoryTree = ({ tree }: { tree: DirectoryNode }) => {
-  const { data: grandParent } = api.containers.getById.useQuery({
-    id: tree.parent.parentId ?? 0,
-  });
-
   return (
-    <Card className="col-span-2 row-span-2 h-full w-full md:col-span-1 md:p-4">
+    <Card className="col-span-2 row-span-2 md:col-span-1 md:p-4">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex-1">

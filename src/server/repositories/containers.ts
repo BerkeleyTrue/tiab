@@ -10,6 +10,7 @@ import type { Db, Tx } from "@/server/db";
 import type { ContainerDTO, DirectoryNode } from "@/types/dto";
 import type ItemsRepository from "./items";
 import type { TagsRepository } from "./tags";
+import type { SQLiteUpdateSetSource } from "drizzle-orm/sqlite-core";
 
 export class ContainerRepository {
   constructor(
@@ -355,14 +356,26 @@ export class ContainerRepository {
   async update(input: {
     containerId: number;
     isPublic?: boolean;
+    parentId?: number | null;
     unDeleted?: boolean;
   }): Promise<ContainerDTO | null> {
+    const values: SQLiteUpdateSetSource<typeof containers> = {};
+
+    if (input.isPublic !== undefined) {
+      values.isPublic = input.isPublic;
+    }
+
+    if (input.parentId !== undefined) {
+      values.parentId = input.parentId;
+    }
+
+    if (input.unDeleted !== undefined) {
+      values.isDeleted = false;
+    }
+
     const res = await this.db
       .update(containers)
-      .set({
-        isPublic: input.isPublic,
-        isDeleted: input.unDeleted ? false : undefined,
-      })
+      .set(values)
       .where(
         and(
           eq(containers.id, input.containerId),

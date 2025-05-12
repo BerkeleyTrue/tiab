@@ -5,6 +5,7 @@ import {
   protectedProcedure,
 } from "@/server/api/trpc";
 import { faker } from "@faker-js/faker";
+import { TRPCError } from "@trpc/server";
 
 export const containerRouter = createTRPCRouter({
   ensurePathname: protectedProcedure
@@ -62,6 +63,54 @@ export const containerRouter = createTRPCRouter({
       return ctx.repos.containers.getPathname(input);
     }),
 
+  update: protectedProcedure
+    .input(
+      z.object({
+        containerId: z.number(),
+        isPublic: z.boolean().optional(),
+        pathname: z.string().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.transaction(async (tx) => {
+        const containerRepo = ctx.repos.containers.withTransaction(tx);
+        const updates: Parameters<typeof containerRepo.update>[0] = {
+          isPublic: input.isPublic,
+          containerId: input.containerId,
+        };
+
+        const currentContainer = await containerRepo.getById({
+          id: input.containerId,
+        });
+
+        if (!currentContainer) {
+          throw new TRPCError({
+            message: "Expected to find container for pathname but found none",
+            code: "NOT_FOUND",
+          });
+        }
+
+        if (input.pathname) {
+          const parent = await containerRepo.ensurePathname({
+            pathname: input.pathname,
+          });
+
+          if (!parent) {
+            throw new TRPCError({
+              message: "Expected to find container for pathname but found none",
+              code: "NOT_FOUND",
+            });
+          }
+
+          updates.parentId = parent.id;
+        }
+
+        const container = await containerRepo.update(updates);
+
+        return container;
+      });
+    }),
+
   delete: publicProcedure
     .input(
       z.object({
@@ -79,9 +128,11 @@ export const containerRouter = createTRPCRouter({
 
         if (itemCount > 0) {
           if (!input.newPathname) {
-            throw new Error(
-              "Container has items, please provide a new pathname",
-            );
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message:
+                "Container has items, please provide a new pathname for the container",
+            });
           }
 
           const newCont = await containerRepo.ensurePathname({
@@ -92,9 +143,10 @@ export const containerRouter = createTRPCRouter({
           });
 
           if (!newCont) {
-            throw new Error(
-              "Expected to find container for pathname but found none",
-            );
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Expected to find container for pathname but found none",
+            });
           }
 
           await itemRepo.moveItemsToContainer({

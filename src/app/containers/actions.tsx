@@ -11,6 +11,7 @@ import { DeleteContainer } from "./delete-container";
 import { MoveItems } from "./move-items";
 import type { DirectoryNode } from "@/types/dto";
 import { AddContainer } from "./add-container";
+import { MoveContainer } from "./move-container";
 
 export const ContainerActions = ({ tree }: { tree: DirectoryNode }) => {
   const utils = api.useUtils();
@@ -21,14 +22,20 @@ export const ContainerActions = ({ tree }: { tree: DirectoryNode }) => {
     setTrue: openDeleteForm,
   } = useBoolean(false);
   const {
-    value: isMoveOpen,
-    setFalse: closeMoveForm,
-    setTrue: openMoveForm,
+    value: isMoveItemOpen,
+    setFalse: closeMoveItemForm,
+    setTrue: openMoveItemForm,
   } = useBoolean(false);
   const {
     value: isAddOpen,
     setFalse: closeAddForm,
     setTrue: openAddForm,
+  } = useBoolean(false);
+
+  const {
+    value: isMoveContainerOpen,
+    setFalse: closeMoveContainerForm,
+    setTrue: openMoveContainerForm,
   } = useBoolean(false);
 
   const handleDelete = useCallback(() => {
@@ -42,7 +49,7 @@ export const ContainerActions = ({ tree }: { tree: DirectoryNode }) => {
   }, [closeDeleteForm, router, tree.parent.id, utils]);
 
   const handleItemsMoved = useCallback(() => {
-    closeMoveForm();
+    closeMoveItemForm();
     router.push(`/containers/${tree.parent.id}`);
     toast.success("Items moved successfully!");
     void utils.containers.getDirectoryTree.invalidate({
@@ -53,7 +60,15 @@ export const ContainerActions = ({ tree }: { tree: DirectoryNode }) => {
     for (const item of tree.items ?? []) {
       void utils.items.getAll.invalidate({ containerId: item.containerId });
     }
-  }, [closeMoveForm, tree.parent.id, router, utils, tree.items]);
+  }, [closeMoveItemForm, tree.parent.id, router, utils, tree.items]);
+
+  const handleContianerMoved = useCallback(() => {
+    closeMoveContainerForm();
+    toast.success("Container moved successfully!");
+    void utils.containers.getDirectoryTree.invalidate({
+      containerId: tree.parent.id,
+    });
+  }, [closeMoveContainerForm, tree.parent.id, utils]);
 
   const handleAdded = useCallback(() => {
     closeAddForm();
@@ -80,8 +95,15 @@ export const ContainerActions = ({ tree }: { tree: DirectoryNode }) => {
             </Button>
             <Button
               variant="secondary"
+              onClick={openMoveContainerForm}
+              className="overflow-hidden text-wrap text-ellipsis"
+            >
+              Move Container
+            </Button>
+            <Button
+              variant="secondary"
               disabled={tree?.items?.length === 0}
-              onClick={openMoveForm}
+              onClick={openMoveItemForm}
               className="overflow-hidden text-wrap text-ellipsis"
             >
               Move Items {tree.items?.length === 0 && "(No items to move)"}
@@ -105,9 +127,9 @@ export const ContainerActions = ({ tree }: { tree: DirectoryNode }) => {
         hasItems={(tree.items?.length ?? 0) > 0}
       />
       <MoveItems
-        isOpen={isMoveOpen}
+        isOpen={isMoveItemOpen}
         containerId={tree.parent.id}
-        onClose={closeMoveForm}
+        onClose={closeMoveItemForm}
         onMove={handleItemsMoved}
       />
 
@@ -116,6 +138,13 @@ export const ContainerActions = ({ tree }: { tree: DirectoryNode }) => {
         onClose={closeAddForm}
         onAdded={handleAdded}
         basePathname={tree.parent.path}
+      />
+
+      <MoveContainer
+        isOpen={isMoveContainerOpen}
+        containerId={tree.parent.id}
+        onClose={closeMoveContainerForm}
+        onMove={handleContianerMoved}
       />
     </>
   );

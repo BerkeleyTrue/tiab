@@ -1,7 +1,7 @@
 "use client";
 
 import type { ItemSelect } from "@/server/db/schema";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import {
   ChevronRight,
   ChevronDown,
@@ -24,6 +24,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { DirectoryNode } from "@/types/dto";
+import { useBoolean } from "@/hooks/use-boolean";
 
 type TreeNodeProps = {
   node: DirectoryNode;
@@ -35,7 +36,7 @@ const levelToPadding = (level: number): number => {
 };
 
 const TreeNode = ({ node, level }: TreeNodeProps) => {
-  const [isExpanded, setIsExpanded] = useState(level === 0);
+  const { value: isExpanded, toggle: toggleExpanded } = useBoolean(level === 0);
   const hasChildren = node.children && node.children.length > 0;
   const hasItems = node.items && node.items.length > 0;
   const isRoot = level === 0;
@@ -58,10 +59,13 @@ const TreeNode = ({ node, level }: TreeNodeProps) => {
     );
   }, [node, isExpanded]);
 
-  const toggleExpand = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsExpanded(!isExpanded);
-  };
+  const toggleExpand = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      toggleExpanded();
+    },
+    [toggleExpanded],
+  );
 
   return (
     <div className="w-full">
@@ -84,7 +88,7 @@ const TreeNode = ({ node, level }: TreeNodeProps) => {
             <span className="w-5" />
           )}
 
-          {isExpanded || !hasChildren ? (
+          {isExpanded || !(hasChildren || hasItems) ? (
             <PackageOpen className="mr-2 h-5 w-5" />
           ) : (
             <Package className="mr-2 h-5 w-5" />

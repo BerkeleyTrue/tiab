@@ -23,8 +23,8 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
 import type { DirectoryNode } from "@/types/dto";
+import { api } from "@/trpc/react";
 
 type TreeNodeProps = {
   node: DirectoryNode;
@@ -74,7 +74,7 @@ const TreeNode = ({ node, level }: TreeNodeProps) => {
         style={{ paddingLeft: `${levelToPadding(level)}px` }}
       >
         <div className="flex items-center" onClick={toggleExpand}>
-          {hasChildren ? (
+          {hasChildren || hasItems ? (
             isExpanded ? (
               <ChevronDown className="mr-1 h-4 w-4" />
             ) : (
@@ -176,7 +176,9 @@ const ItemRow = ({ item, level }: { item: ItemSelect; level: number }) => {
 };
 
 export const DirectoryTree = ({ tree }: { tree: DirectoryNode }) => {
-  const router = useRouter();
+  const { data: grandParent } = api.containers.getById.useQuery({
+    id: tree.parent.parentId ?? 0,
+  });
 
   return (
     <Card className="col-span-2 row-span-2 h-full w-full md:col-span-1 md:p-4">
@@ -198,12 +200,12 @@ export const DirectoryTree = ({ tree }: { tree: DirectoryNode }) => {
           </div>
 
           {tree.parent.path !== "/" && (
-            <Button
-              variant="secondary"
-              className="mt-2"
-              onClick={() => router.back()}
-            >
-              Back
+            <Button variant="secondary" className="mt-2" asChild>
+              {tree.parent.parentId === null ? (
+                <Link href={`/containers`}>Back</Link>
+              ) : (
+                <Link href={`/containers/${tree.parent.parentId}`}>Back</Link>
+              )}
             </Button>
           )}
         </div>

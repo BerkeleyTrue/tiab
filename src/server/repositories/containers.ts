@@ -274,9 +274,7 @@ export class ContainerRepository {
     return res;
   }
 
-  async getChildren(input: {
-    directoryId: number;
-  }): Promise<ContainerDTO[]> {
+  async getChildren(input: { directoryId: number }): Promise<ContainerDTO[]> {
     const queries = [
       eq(containers.userId, this.session.userId),
       eq(containers.isDeleted, false),

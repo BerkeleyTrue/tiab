@@ -98,8 +98,6 @@ export const EditItemForm = ({ item }: { item: ItemDTO }) => {
               watch={form.watch}
               setValue={form.setValue}
               getValues={form.getValues}
-              description="Select a container for your item"
-              label="Container"
               onTabPress={() => {
                 nameInputRef.current?.focus();
               }}

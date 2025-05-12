@@ -80,10 +80,9 @@ export const AddContainer = ({
             className="flex w-full flex-col gap-4"
           >
             <ContainerSelect
+              basePathname={basePathname}
               control={form.control}
               getValues={form.getValues}
-              label="Select a new container"
-              description="Select a new container to add here."
               setValue={form.setValue}
               watch={form.watch}
               onTabPress={() => {

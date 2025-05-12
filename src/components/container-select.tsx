@@ -43,10 +43,9 @@ interface ContainerSelectProps<TFieldValues extends ContainerFieldValues> {
   watch: UseFormWatch<TFieldValues>;
   getValues: UseFormGetValues<TFieldValues>;
   setValue: UseFormSetValue<TFieldValues>;
-  description?: string;
   onTabPress?: () => void;
-  label?: string;
   disabled?: boolean;
+  basePathname?: string;
 }
 
 export function ContainerSelect<TFieldValues extends ContainerFieldValues>({
@@ -56,6 +55,7 @@ export function ContainerSelect<TFieldValues extends ContainerFieldValues>({
   getValues,
   onTabPress,
   disabled,
+  basePathname,
 }: ContainerSelectProps<TFieldValues>) {
   const [openPopover, setOpenPopover] = useState(false);
   const containerInputRef = useRef<HTMLInputElement>(null);
@@ -120,22 +120,22 @@ export function ContainerSelect<TFieldValues extends ContainerFieldValues>({
   );
 
   const handleCommandValueChange = useCallback(
-    (value: string) => {
-      value = value.replace(/\s+/g, "_");
-      if (value === "/") {
+    (query: string) => {
+      query = query.replace(/\s+/g, "_");
+      if (query === "/") {
         return;
       }
 
       const curr: string = getValues(name);
       // we are at the root container
       if (curr === "/") {
-        innerSetValue(`/${value}`);
+        innerSetValue(`/${query}`);
         return;
       }
 
       if (curr.endsWith("/")) {
         // starting new search
-        innerSetValue(`${curr}${value}`);
+        innerSetValue(`${curr}${query}`);
         return;
       }
 
@@ -143,11 +143,11 @@ export function ContainerSelect<TFieldValues extends ContainerFieldValues>({
       const segments = curr.split("/").filter(Boolean);
       segments.pop();
       if (segments.length === 0) {
-        innerSetValue(`/${value}`);
+        innerSetValue(`/${query}`);
         return;
       }
 
-      innerSetValue(`/${segments.join("/")}/${value}`);
+      innerSetValue(`/${segments.join("/")}/${query}`);
       return;
     },
     [getValues, name, innerSetValue],
@@ -158,9 +158,17 @@ export function ContainerSelect<TFieldValues extends ContainerFieldValues>({
       const value = e.currentTarget.value;
       // if we have no search query and we press backspace, we want to go up a level
       if (e.key === "Backspace" && value.length === 0) {
-        regenerate();
         const curr: string = getValues(name);
+        const baseSegments = basePathname?.split("/").filter(Boolean);
         const segments = curr.trim().split("/").filter(Boolean);
+
+        if (basePathname && baseSegments?.length && segments.length <= baseSegments.length ) {
+          innerSetValue(basePathname)
+          return;
+        }
+
+        regenerate();
+
         segments.pop();
 
         if (segments.length === 0) {
@@ -184,7 +192,7 @@ export function ContainerSelect<TFieldValues extends ContainerFieldValues>({
         return;
       }
     },
-    [getValues, name, onTabPress, innerSetValue, regenerate],
+    [basePathname, getValues, name, onTabPress, innerSetValue, regenerate],
   );
 
   return (

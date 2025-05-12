@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Form } from "@/components/ui/form";
 import { toast } from "sonner";
+import { useRef } from "react";
 
 const formSchema = z.object({
   container: z.string().min(1, "Container is required"),
@@ -29,6 +30,7 @@ export function OrphanedItemsForm({
   orphanedItems,
   onSuccess,
 }: OrphanedItemsFormProps) {
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -101,12 +103,14 @@ export function OrphanedItemsForm({
               watch={form.watch}
               getValues={form.getValues}
               setValue={form.setValue}
-              label="Destination Container"
-              description="Select where to move the orphaned items"
               disabled={moveItemsMutation.isPending}
+              onTabPress={() => {
+                buttonRef.current?.focus();
+              }}
             />
 
             <Button
+              ref={buttonRef}
               type="submit"
               className="w-full"
               disabled={

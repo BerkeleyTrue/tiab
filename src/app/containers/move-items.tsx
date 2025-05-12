@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { api } from "@/trpc/react";
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form } from "@/components/ui/form";
@@ -33,6 +33,7 @@ export const MoveItems = ({
   onMove: () => void;
   onClose: () => void;
 }) => {
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -71,15 +72,15 @@ export const MoveItems = ({
             className="flex w-full flex-col gap-4"
           >
             Are you sure you want to move the items to a new container?
-
-              <ContainerSelect
-                control={form.control}
-                getValues={form.getValues}
-                label="Select a new container"
-                description="Select a new container to move the items to."
-                setValue={form.setValue}
-                watch={form.watch}
-              />
+            <ContainerSelect
+              control={form.control}
+              getValues={form.getValues}
+              setValue={form.setValue}
+              watch={form.watch}
+              onTabPress={() => {
+                buttonRef.current?.focus();
+              }}
+            />
             <DialogFooter>
               <Button
                 variant="outline"
@@ -90,6 +91,7 @@ export const MoveItems = ({
                 Cancel
               </Button>
               <Button
+                ref={buttonRef}
                 variant="destructive"
                 type="submit"
                 disabled={mutate.isPending}

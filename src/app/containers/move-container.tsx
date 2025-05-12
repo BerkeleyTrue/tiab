@@ -74,8 +74,6 @@ export const MoveContainer = ({
             <ContainerSelect
               control={form.control}
               getValues={form.getValues}
-              label="Select a new container"
-              description="Select a new container."
               setValue={form.setValue}
               watch={form.watch}
             />

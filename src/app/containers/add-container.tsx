@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { api } from "@/trpc/react";
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form } from "@/components/ui/form";
@@ -34,12 +34,19 @@ export const AddContainer = ({
   onAdded: () => void;
   onClose: () => void;
 }) => {
+  const nextRef = useRef<HTMLButtonElement>(null);
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       container: basePathname,
     },
   });
+
+  useEffect(() => {
+    if (isOpen && basePathname) {
+      form.setValue("container", basePathname);
+    }
+  }, [isOpen, basePathname, form]);
 
   const mutate = api.containers.ensurePathname.useMutation({
     onSuccess: () => {
@@ -79,6 +86,9 @@ export const AddContainer = ({
               description="Select a new container to add here."
               setValue={form.setValue}
               watch={form.watch}
+              onTabPress={() => {
+                nextRef.current?.focus();
+              }}
             />
             <DialogFooter>
               <Button
@@ -90,6 +100,7 @@ export const AddContainer = ({
                 Cancel
               </Button>
               <Button
+                ref={nextRef}
                 variant="destructive"
                 type="submit"
                 disabled={mutate.isPending}

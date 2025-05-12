@@ -31,12 +31,15 @@ export const ContainerActions = ({ tree }: { tree: DirectoryNode }) => {
     setFalse: closeAddForm,
     setTrue: openAddForm,
   } = useBoolean(false);
-
   const {
     value: isMoveContainerOpen,
     setFalse: closeMoveContainerForm,
     setTrue: openMoveContainerForm,
   } = useBoolean(false);
+
+  const { data: basepath } = api.containers.getPathname.useQuery({
+    containerId: tree.parent.id,
+  })
 
   const handleDelete = useCallback(() => {
     closeDeleteForm();
@@ -137,7 +140,7 @@ export const ContainerActions = ({ tree }: { tree: DirectoryNode }) => {
         isOpen={isAddOpen}
         onClose={closeAddForm}
         onAdded={handleAdded}
-        basePathname={tree.parent.path}
+        basePathname={(basepath ?? "")+"/"}
       />
 
       <MoveContainer

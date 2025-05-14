@@ -355,6 +355,7 @@ export class ContainerRepository {
     containerId: number;
     isPublic?: boolean;
     parentId?: number | null;
+    path?: string;
     unDeleted?: boolean;
   }): Promise<ContainerDTO | null> {
     const values: SQLiteUpdateSetSource<typeof containers> = {};
@@ -371,6 +372,9 @@ export class ContainerRepository {
       values.isDeleted = false;
     }
 
+    if (input.path !== undefined) {
+      values.path = input.path;
+    }
     const res = await this.db
       .update(containers)
       .set(values)

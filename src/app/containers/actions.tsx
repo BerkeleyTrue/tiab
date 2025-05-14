@@ -12,6 +12,7 @@ import { MoveItems } from "./move-items";
 import type { DirectoryNode } from "@/types/dto";
 import { AddContainer } from "./add-container";
 import { MoveContainer } from "./move-container";
+import { RenameContainer } from "./rename";
 
 export const ContainerActions = ({ tree }: { tree: DirectoryNode }) => {
   const utils = api.useUtils();
@@ -36,10 +37,15 @@ export const ContainerActions = ({ tree }: { tree: DirectoryNode }) => {
     setFalse: closeMoveContainerForm,
     setTrue: openMoveContainerForm,
   } = useBoolean(false);
+  const {
+    value: isRenameOpen,
+    setFalse: closeRenameForm,
+    setTrue: openRenameForm,
+  } = useBoolean(false);
 
   const { data: basepath } = api.containers.getPathname.useQuery({
     containerId: tree.parent.id,
-  })
+  });
 
   const handleDelete = useCallback(() => {
     closeDeleteForm();
@@ -81,6 +87,14 @@ export const ContainerActions = ({ tree }: { tree: DirectoryNode }) => {
     });
   }, [closeAddForm, tree.parent.id, utils]);
 
+  const handleRename = useCallback(() => {
+    closeRenameForm();
+    toast.success("Container renamed successfully!");
+    void utils.containers.getDirectoryTree.invalidate({
+      containerId: tree.parent.id,
+    });
+  }, [closeRenameForm, tree.parent.id, utils]);
+
   return (
     <>
       <Card className="col-span-2">
@@ -102,6 +116,13 @@ export const ContainerActions = ({ tree }: { tree: DirectoryNode }) => {
               className="overflow-hidden text-wrap text-ellipsis"
             >
               Move Container
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={openRenameForm}
+              className="overflow-hidden text-wrap text-ellipsis"
+            >
+              Rename Container
             </Button>
             <Button
               variant="secondary"
@@ -140,7 +161,7 @@ export const ContainerActions = ({ tree }: { tree: DirectoryNode }) => {
         isOpen={isAddOpen}
         onClose={closeAddForm}
         onAdded={handleAdded}
-        basePathname={(basepath ?? "")+"/"}
+        basePathname={(basepath ?? "") + "/"}
       />
 
       <MoveContainer
@@ -148,6 +169,14 @@ export const ContainerActions = ({ tree }: { tree: DirectoryNode }) => {
         containerId={tree.parent.id}
         onClose={closeMoveContainerForm}
         onMove={handleContianerMoved}
+      />
+
+      <RenameContainer
+        isOpen={isRenameOpen}
+        containerId={tree.parent.id}
+        onClose={closeRenameForm}
+        initPath={tree.parent.path}
+        onRenamed={handleRename}
       />
     </>
   );

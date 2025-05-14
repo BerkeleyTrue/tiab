@@ -69,13 +69,13 @@ export const containerRouter = createTRPCRouter({
         containerId: z.number(),
         isPublic: z.boolean().optional(),
         pathname: z.string().optional(),
+        path: z.string().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
       return ctx.db.transaction(async (tx) => {
         const containerRepo = ctx.repos.containers.withTransaction(tx);
         const updates: Parameters<typeof containerRepo.update>[0] = {
-          isPublic: input.isPublic,
           containerId: input.containerId,
         };
 
@@ -103,6 +103,15 @@ export const containerRouter = createTRPCRouter({
           }
 
           updates.parentId = parent.id;
+        }
+
+        if (input.isPublic !== undefined) {
+          updates.isPublic = input.isPublic;
+        }
+
+        if (input.path) {
+          const path = input.path.trim().toLowerCase().replace(/\s+/g, "_");
+          updates.path = path;
         }
 
         const container = await containerRepo.update(updates);

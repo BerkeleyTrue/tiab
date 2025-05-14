@@ -71,10 +71,10 @@ export const AddItemForm = ({
 
   // Set the default container value if containerId is provided
   useEffect(() => {
-    if (containerId && pathname) {
+    if (isOpen && containerId && pathname) {
       form.setValue("container", pathname);
     }
-  }, [pathname, form]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isOpen, pathname, form, containerId]);
 
   const handleClose = useCallback(() => {
     onClose();

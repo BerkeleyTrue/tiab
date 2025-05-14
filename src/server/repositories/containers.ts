@@ -375,6 +375,7 @@ export class ContainerRepository {
     if (input.path !== undefined) {
       values.path = input.path;
     }
+
     const res = await this.db
       .update(containers)
       .set(values)

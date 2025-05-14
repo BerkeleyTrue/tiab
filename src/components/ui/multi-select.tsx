@@ -82,6 +82,7 @@ interface MultipleSelectorProps {
   >;
   /** hide the clear all button. */
   hideClearAllButton?: boolean;
+  onTabPress?: () => void;
 }
 
 export interface MultipleSelectorRef {
@@ -175,6 +176,7 @@ const MultipleSelector = React.forwardRef<
       delay,
       onSearch,
       onSearchSync,
+      onTabPress,
       loadingIndicator,
       emptyIndicator,
       maxSelected = Number.MAX_SAFE_INTEGER,
@@ -255,9 +257,14 @@ const MultipleSelector = React.forwardRef<
           if (e.key === "Escape") {
             input.blur();
           }
+
+          if (e.key === "Tab" && onTabPress) {
+            e.preventDefault();
+            onTabPress();
+          }
         }
       },
-      [handleUnselect, selected],
+      [handleUnselect, selected, onTabPress],
     );
 
     useEffect(() => {

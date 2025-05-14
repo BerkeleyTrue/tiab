@@ -49,6 +49,7 @@ export const AddItemForm = ({
 }) => {
   const utils = api.useUtils();
   const nameInputRef = useRef<HTMLInputElement>(null);
+  const countInputRef = useRef<HTMLInputElement>(null);
   const { data: pathname } = api.containers.getPathname.useQuery(
     { containerId: containerId ?? 0 },
     {
@@ -174,6 +175,9 @@ export const AddItemForm = ({
                           value: tag.name,
                         }));
                       }}
+                      onTabPress={() => {
+                        countInputRef.current?.focus();
+                      }}
                       value={(field.value ?? []).map((tag) => ({
                         label: tag,
                         value: tag,
@@ -208,6 +212,7 @@ export const AddItemForm = ({
                       placeholder="Quantity"
                       {...field}
                       onChange={(e) => field.onChange(Number(e.target.value))}
+                      ref={countInputRef}
                     />
                   </FormControl>
                   <FormMessage />

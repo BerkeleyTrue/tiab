@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { api } from "@/trpc/react";
 import { Input } from "@/components/ui/input";
-import { FolderIcon, CheckIcon } from "lucide-react";
+import { FolderIcon, CheckIcon, Dices } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -266,9 +266,9 @@ export function ContainerSelect<TFieldValues extends ContainerFieldValues>({
                       <CommandItem
                         value={randomName}
                         onSelect={handleCommandSelect}
-                        className="flex items-center gap-2"
+                        className="flex items-center gap-2 text-(--ctp-lavender)"
                       >
-                        <FolderIcon className="h-4 w-4" />
+                        <Dices className="size-4" />
                         <span>{randomName}</span>
                       </CommandItem>
                     )}

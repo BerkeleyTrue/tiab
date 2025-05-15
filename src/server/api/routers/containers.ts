@@ -17,7 +17,16 @@ export const containerRouter = createTRPCRouter({
     }),
 
   getRandomName: publicProcedure.query(async () => {
-    const name = `${faker.color.human().replace(/\s/g, "_")}_${faker.word.noun()}`;
+    const adj = faker.word.adjective({
+      length: { min: 3, max: 6 },
+      strategy: "shortest"
+    }).replace(/\s/g, "_");
+    const noun = faker.word.noun({
+      length: { min: 3, max: 6 },
+      strategy: "shortest"
+    }).replace(/\s/g, "_");
+
+    const name = `${adj}_${noun}`;
     return name;
   }),
 

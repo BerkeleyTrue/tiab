@@ -92,16 +92,22 @@ export function ContainerSelect<TFieldValues extends ContainerFieldValues>({
   const handleCommandSelect = useCallback(
     (value: string) => {
       const curr: string = getValues(name);
-      regenerate();
+      // allow randomName to be edited
+      const ending = `/${value}${value === randomName ? "" : "/"}`;
+
+      if (value !== randomName) {
+        regenerate();
+      }
+
       // we are in the root container
       if (curr === "/") {
-        innerSetValue(`/${value}/`);
+        innerSetValue(ending);
         return;
       }
 
       // if no current search, add new segment
       if (curr.endsWith("/")) {
-        innerSetValue(`${curr}${value}/`);
+        innerSetValue(`${curr.slice(0, -1)}${ending}`);
         return;
       }
 
@@ -109,14 +115,14 @@ export function ContainerSelect<TFieldValues extends ContainerFieldValues>({
       const segments = curr.split("/").filter(Boolean);
       segments.pop();
       if (segments.length === 0) {
-        innerSetValue(`/${value}/`);
+        innerSetValue(ending);
         return;
       }
 
-      innerSetValue(`/${segments.join("/")}/${value}/`);
+      innerSetValue(`/${segments.join("/")}${ending}`);
       return;
     },
-    [getValues, name, innerSetValue, regenerate],
+    [getValues, name, innerSetValue, regenerate, randomName],
   );
 
   const handleCommandValueChange = useCallback(
@@ -162,8 +168,12 @@ export function ContainerSelect<TFieldValues extends ContainerFieldValues>({
         const baseSegments = basePathname?.split("/").filter(Boolean);
         const segments = curr.trim().split("/").filter(Boolean);
 
-        if (basePathname && baseSegments?.length && segments.length <= baseSegments.length ) {
-          innerSetValue(basePathname)
+        if (
+          basePathname &&
+          baseSegments?.length &&
+          segments.length <= baseSegments.length
+        ) {
+          innerSetValue(basePathname);
           return;
         }
 

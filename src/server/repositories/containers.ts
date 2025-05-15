@@ -191,6 +191,41 @@ export class ContainerRepository {
 
     return existingContainer;
   }
+  
+  /**
+   * get base container
+   * @returns ContainerDTO
+   */
+  async getBaseContainer(input: {
+    pathname: string;
+  }): Promise<ContainerSelect | null> {
+    // Process container path and create container hierarchy
+    const segments = input.pathname
+      .split("/")
+      .filter(Boolean)
+      .map((segment) => segment.trim().toLowerCase());
+
+    const containerAncestry = segments.map((path, idx) => {
+      return {
+        path: path,
+        parent: segments[idx - 1] ?? "/",
+      };
+    });
+
+    let parent: ContainerDTO | null = null;
+    for (const ancestor of containerAncestry) {
+      parent = await this.getByPath({
+        path: ancestor.path,
+        parentId: parent?.id ?? null,
+      });
+
+      if (!parent) {
+        return null;
+      }
+    }
+
+    return parent;
+  }
 
   /**
    * Ensures the existence of a container hierarchy based on the provided pathname.
@@ -246,7 +281,7 @@ export class ContainerRepository {
         query = segments.pop() ?? "-1";
         pathname = segments.join("/");
       }
-      const parent = await this.ensurePathname({
+      const parent = await this.getBaseContainer({
         pathname,
       });
 
@@ -372,6 +407,7 @@ export class ContainerRepository {
       values.isDeleted = false;
     }
 
+    console.log("input.path", input.path);
     if (input.path !== undefined) {
       values.path = input.path;
     }

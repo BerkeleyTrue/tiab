@@ -1,15 +1,19 @@
 import { api } from "@/trpc/server";
-import { ItemsTable } from "./items";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Signature } from "lucide-react";
+import { ContainersView } from "./containers/containers-view";
 
 export default async function Home() {
-  const items = await api.items.getAll({});
+  const tree = await api.containers.getDirectoryTree({
+    containerId: 0,
+  });
   const user = await api.auth.getUser();
 
-  return (
+  return user ? (
+    <ContainersView tree={tree} />
+  ) : (
     <>
       <Card variant="outline">
         <CardContent>
@@ -19,20 +23,16 @@ export default async function Home() {
           </header>
         </CardContent>
       </Card>
-      {user ? (
-        <ItemsTable initItems={items} />
-      ) : (
-        <Alert>
-          <Signature className="size-4" />
-          <AlertTitle>Not Signed In</AlertTitle>
-          <AlertDescription className="">
-            <p>
-              You need to sign in to view your items.{" "}
-              <Link href="/auth">Sign In</Link>
-            </p>
-          </AlertDescription>
-        </Alert>
-      )}
+      <Alert>
+        <Signature className="size-4" />
+        <AlertTitle>Not Signed In</AlertTitle>
+        <AlertDescription className="">
+          <p>
+            You need to sign in to view your items.{" "}
+            <Link href="/auth">Sign In</Link>
+          </p>
+        </AlertDescription>
+      </Alert>
     </>
   );
 }

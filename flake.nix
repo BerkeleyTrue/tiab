@@ -14,7 +14,7 @@
         };
 
         # Node.js version
-        nodejs = pkgs.nodejs_20;
+        nodejs = pkgs.nodejs_22;
 
         # PNPM version from packageManager field
         pnpm = pkgs.pnpm_10;
@@ -84,6 +84,20 @@
           type = "app";
           description = "Tiab application - A personal inventory solution";
           program = "${self.packages.${system}.default}/bin/${name}";
+        };
+
+        devShells.default = pkgs.mkShell {
+          name = "taib";
+          buildInputs = [
+            nodejs
+            pnpm
+            pkgs.sqlite
+            pkgs.just
+          ];
+
+          shellHook = ''
+            just --list
+          '';
         };
       });
 }

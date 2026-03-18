@@ -259,54 +259,58 @@ export class ContainerRepository {
     return parent;
   }
 
-  async search(input: { query: string }): Promise<ContainerSelect[]> {
-    const segments = input.query.split("/").filter(Boolean);
+  async getAll(): Promise<(ContainerSelect & { pathname: string })[]> {
+    return this.db
+      .select({ ...getTableColumns(containers), pathname: containersPathnameView.pathname })
+      .from(containers)
+      .innerJoin(containersPathnameView, eq(containers.id, containersPathnameView.id))
+      .where(
+        and(
+          eq(containers.userId, this.session.userId),
+          eq(containers.isDeleted, false),
+        ),
+      )
+      .orderBy(sql`length(${containersPathnameView.pathname})`, containersPathnameView.pathname)
+      .all();
+  }
 
-    // root query
-    let query = "";
+  async search(input: { query: string }): Promise<(ContainerSelect & { pathname: string })[]> {
+    const segments = input.query.split("/").filter(Boolean);
 
     const queries = [
       eq(containers.userId, this.session.userId),
       eq(containers.isDeleted, false),
     ];
 
-    if (input.query !== "/") {
-      let pathname = "";
-      // "/abc/" or "/abc/def/"
-      if (input.query.endsWith("/")) {
-        pathname = input.query.slice(0, -1);
-        // "/abc" or "/abc/def"
-      } else {
-        // we have a search query
-        query = segments.pop() ?? "-1";
-        pathname = segments.join("/");
-      }
-      const parent = await this.getBaseContainer({
-        pathname,
-      });
-
-      if (!parent) {
-        return [];
-      }
-
-      queries.push(eq(containers.parentId, parent.id));
-    } else {
-      // find all root containers
+    if (input.query === "/") {
+      // special case: return all root containers
       queries.push(isNull(containers.parentId));
+    } else if (input.query.endsWith("/")) {
+      // "/abc/" → list children of /abc
+      const pathname = input.query.slice(0, -1);
+      const parent = await this.getBaseContainer({ pathname });
+      if (!parent) return [];
+      queries.push(eq(containers.parentId, parent.id));
+    } else if (input.query.includes("/")) {
+      // "/abc/def" or "/abc/de" → scoped name search under /abc
+      const query = segments.pop() ?? "";
+      const pathname = segments.join("/");
+      const parent = await this.getBaseContainer({ pathname });
+      if (!parent) return [];
+      queries.push(eq(containers.parentId, parent.id));
+      if (query) queries.push(like(containers.path, `%${query}%`));
+    } else {
+      // plain name query "box" → flat search across all containers
+      queries.push(like(containers.path, `%${input.query}%`));
     }
 
-    if (query.length > 0) {
-      queries.push(like(containers.path, `%${query}%`));
-    }
-
-    const res = await this.db
-      .select()
+    return this.db
+      .select({ ...getTableColumns(containers), pathname: containersPathnameView.pathname })
       .from(containers)
+      .innerJoin(containersPathnameView, eq(containers.id, containersPathnameView.id))
       .where(and(...queries))
       .limit(10)
       .all();
-
-    return res;
   }
 
   async getChildren(input: { directoryId: number }): Promise<ContainerDTO[]> {

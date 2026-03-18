@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import {
   type ColumnDef,
   type SortingState,
-  type ColumnFiltersState,
+  type FilterFn,
   flexRender,
   getCoreRowModel,
   useReactTable,
@@ -54,7 +54,19 @@ export const ItemsTable = ({
 }) => {
   const utils = api.useUtils();
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [globalFilter, setGlobalFilter] = useState("");
+
+  const multiColumnFilter: FilterFn<ItemDTO> = (row, _columnId, filterValue: string) => {
+    const search = filterValue.toLowerCase();
+    const name = (row.getValue<string>("name") ?? "").toLowerCase();
+    const description = (row.getValue<string>("description") ?? "").toLowerCase();
+    const tags = row.getValue<string[]>("tags") ?? [];
+    return (
+      name.includes(search) ||
+      description.includes(search) ||
+      tags.some((tag) => tag.toLowerCase().includes(search))
+    );
+  };
   const {
     value: isAddItemOpen,
     setTrue: openAddItem,
@@ -142,11 +154,12 @@ export const ItemsTable = ({
     getPaginationRowModel: getPaginationRowModel(),
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
-    onColumnFiltersChange: setColumnFilters,
+    onGlobalFilterChange: setGlobalFilter,
+    globalFilterFn: multiColumnFilter,
     getFilteredRowModel: getFilteredRowModel(),
     state: {
       sorting,
-      columnFilters,
+      globalFilter,
     },
   });
 
@@ -165,11 +178,9 @@ export const ItemsTable = ({
         </CardDescription>
         <CardAction className="flex items-center justify-between">
           <Input
-            placeholder="Filter by name..."
-            value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-            onChange={(event) =>
-              table.getColumn("name")?.setFilterValue(event.target.value)
-            }
+            placeholder="Filter by name, description, or tag..."
+            value={globalFilter}
+            onChange={(event) => setGlobalFilter(event.target.value)}
             className="max-w-sm"
           />
         </CardAction>

@@ -1,30 +1,33 @@
 "use client";
 
-import { Bone, Home, Settings, TreePine } from "lucide-react";
+import { Bone, Home, Search, Settings, TreePine } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useCallback } from "react";
 import { usePathname } from "next/navigation";
 
+const navItems = [
+  { label: "Home", icon: Home, route: "/" },
+  { label: "Items", icon: Bone, route: "/items" },
+  { label: "Containers", icon: TreePine, route: "/containers" },
+  { label: "Search", icon: Search, route: "/containers/search" },
+  { label: "Settings", icon: Settings, route: "/settings" },
+];
+
 export const NavBar = () => {
   const path = usePathname();
 
-  const navItems = [
-    { label: "Home", icon: Home, route: "/" },
-    { label: "Items", icon: Bone, route: "/items" },
-    { label: "Containers", icon: TreePine, route: "/containers" },
-    { label: "Settings", icon: Settings, route: "/settings" },
-  ];
-
   const isActive = useCallback(
     (route: string) => {
-      // Exact match for home page
-      if (route === "/" && path === "/") {
-        return true;
-      }
-      // For other routes, check if the current path starts with the route
-      // This handles nested routes like /weight/add still highlighting the Weight nav item
-      return route !== "/" && path.startsWith(route);
+      if (route === "/") return path === "/";
+      const matches = path === route || path.startsWith(route + "/");
+      if (!matches) return false;
+      const hasMoreSpecific = navItems.some(
+        (item) =>
+          item.route.startsWith(route + "/") &&
+          (path === item.route || path.startsWith(item.route + "/")),
+      );
+      return !hasMoreSpecific;
     },
     [path],
   );

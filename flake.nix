@@ -19,14 +19,17 @@
         # PNPM version from packageManager field
         pnpm = pkgs.pnpm_10;
 
+        packageJson = builtins.fromJSON (builtins.readFile ./package.json);
+
         # Project name from package.json
-        name = "tiab";
+        name = packageJson.name;
+        version = packageJson.version;
       in
       {
         # Package definition
         packages.default = pkgs.stdenv.mkDerivation (finalAttrs: {
           pname = name;
-          version = "0.1.0";
+          inherit version;
           src = ./.;
 
           nativeBuildInputs = [

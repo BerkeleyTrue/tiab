@@ -54,6 +54,21 @@ format-check:
 format:
     pnpm format:write
 
+# Build the nix flake
+[group('flake')]
+flake-build:
+    nix build
+
+# Update all flake inputs
+[group('flake')]
+flake-update:
+    nix flake update
+
+# Update a specific flake input
+[group('flake')]
+flake-update-input input:
+    nix flake update {{input}}
+
 # Generate database migrations
 [group('database')]
 db-generate:

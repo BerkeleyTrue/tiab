@@ -2,7 +2,7 @@
   description = "tiab - Trapped In A Box - A personal inventory system";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
@@ -73,6 +73,7 @@
           '';
 
           pnpmDeps = pnpm.fetchDeps {
+            fetcherVersion = 1;
             inherit (finalAttrs) pname version src;
             hash = "sha256-TNd8g5uKBhWsujT0OXb8jWaPXKFqOcnHgfyAxIRIQKQ="; 
           };
@@ -99,7 +100,16 @@
           ];
 
           shellHook = ''
-            just --list
+            function menu () {
+              echo
+              echo -e "\033[1;34m>==> ️  '$name'\n\033[0m"
+              ${pkgs.just}/bin/just --list
+              echo
+              echo "(Run 'just --list' to display this menu again)"
+              echo
+            }
+
+            menu
           '';
         };
       });

@@ -14,7 +14,7 @@
         };
 
         # Node.js version
-        nodejs = pkgs.nodejs_22;
+        nodejs = pkgs.nodejs_24;
 
         # PNPM version from packageManager field
         pnpm = pkgs.pnpm_10;

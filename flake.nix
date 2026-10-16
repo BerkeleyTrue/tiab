@@ -6,104 +6,107 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, flake-utils, ... }:
-    flake-utils.lib.eachDefaultSystem (system:
-      let
-        pkgs = import nixpkgs {
-          inherit system;
+  outputs = {
+    self,
+    nixpkgs,
+    flake-utils,
+    ...
+  }:
+    flake-utils.lib.eachDefaultSystem (system: let
+      pkgs = import nixpkgs {
+        inherit system;
+      };
+
+      nodejs = pkgs.nodejs_24;
+      pnpm = pkgs.pnpm_12;
+      packageJson = builtins.fromJSON (builtins.readFile ./package.json);
+      name = packageJson.name;
+      version = packageJson.version;
+    in {
+      packages.default = pkgs.stdenv.mkDerivation (finalAttrs: {
+        pname = name;
+        inherit version;
+        src = ./.;
+
+        nativeBuildInputs = [
+          nodejs
+          pnpm
+          pkgs.pnpmConfigHook
+        ];
+
+        buildInputs = [
+          nodejs
+        ];
+
+        buildPhase = ''
+          runHook preBuild
+          # dummy database URL for build
+          export DATABASE_URL="file:./db.sqlite"
+          pnpm run build
+          runHook postBuild
+        '';
+
+        installPhase = ''
+          runHook preInstall
+          mkdir -p $out
+          cp -r .next $out/
+          cp -r node_modules $out/
+          cp -r drizzle $out/
+          cp package.json $out/
+          cp pnpm-lock.yaml $out/
+
+          # Create a simple wrapper script to start the application
+          mkdir -p $out/bin
+
+          cat > $out/bin/${name} << EOF
+          #!/bin/env bash
+          cd $out
+          exec ${nodejs}/bin/node $out/node_modules/next/dist/bin/next start
+          EOF
+
+          chmod +x $out/bin/${name}
+          runHook postInstall
+        '';
+
+        pnpmDeps = pkgs.fetchPnpmDeps {
+          fetcherVersion = 4;
+          inherit (finalAttrs) pname version src;
+          hash = "sha256-HdabcQuwqEuaXwu1iYnnT+QsobCxAFd3or6/vhw3N34=";
         };
 
-        nodejs = pkgs.nodejs_24;
-        pnpm = pkgs.pnpm_12;
-        packageJson = builtins.fromJSON (builtins.readFile ./package.json);
-        name = packageJson.name;
-        version = packageJson.version;
-      in
-      {
-        packages.default = pkgs.stdenv.mkDerivation (finalAttrs: {
-          pname = name;
-          inherit version;
-          src = ./.;
-
-          nativeBuildInputs = [
-            nodejs
-            pnpm
-            pkgs.pnpmConfigHook
-          ];
-
-          buildInputs = [
-            nodejs
-          ];
-
-          buildPhase = ''
-            runHook preBuild
-            # dummy database URL for build
-            export DATABASE_URL="file:./db.sqlite"
-            pnpm run build
-            runHook postBuild
-          '';
-
-          installPhase = ''
-            runHook preInstall
-            mkdir -p $out
-            cp -r .next $out/
-            cp -r node_modules $out/
-            cp -r drizzle $out/
-            cp package.json $out/
-            cp pnpm-lock.yaml $out/
-            
-            # Create a simple wrapper script to start the application
-            mkdir -p $out/bin
-
-            cat > $out/bin/${name} << EOF
-            #!/bin/env bash
-            cd $out
-            exec ${nodejs}/bin/node $out/node_modules/next/dist/bin/next start
-            EOF
-
-            chmod +x $out/bin/${name}
-            runHook postInstall
-          '';
-
-          pnpmDeps = pkgs.fetchPnpmDeps {
-            fetcherVersion = 4;
-            inherit (finalAttrs) pname version src;
-            hash = "sha256-TNd8g5uKBhWsujT0OXb8jWaPXKFqOcnHgfyAxIRIQKQ="; 
-          };
-          
-          meta = {
-            mainProgram = name;
-          };
-        });
-
-        # App definition for running with `nix run`
-        apps.default = {
-          type = "app";
-          description = "Tiab application - A personal inventory solution";
-          program = "${self.packages.${system}.default}/bin/${name}";
-        };
-
-        devShells.default = pkgs.mkShell {
-          name = "taib";
-          buildInputs = [
-            nodejs
-            pnpm
-            pkgs.sqlite
-            pkgs.just
-          ];
-
-          shellHook = ''
-            function menu () {
-              echo
-              echo -e "\033[1;34m>==> ️  '$name'\n\033[0m"
-              ${pkgs.just}/bin/just --list
-              echo
-              echo "(Run 'just --list' to display this menu again)"
-              echo
-            }
-
-            menu
-          '';
+        meta = {
+          mainProgram = name;
         };
       });
+
+      # App definition for running with `nix run`
+      apps.default = {
+        type = "app";
+        description = "Tiab application - A personal inventory solution";
+        program = "${self.packages.${system}.default}/bin/${name}";
+      };
+
+      devShells.default = pkgs.mkShell {
+        name = "taib";
+        buildInputs = [
+          nodejs
+          pnpm
+          pkgs.sqlite
+          pkgs.just
+        ];
+
+        shellHook = ''
+          function menu () {
+            echo
+            echo -e "\033[1;34m>==> ️  '$name'\n\033[0m"
+            ${pkgs.just}/bin/just --list
+            echo
+            echo "(Run 'just --list' to display this menu again)"
+            echo
+          }
+
+          menu
+        '';
+      };
+    });
 }

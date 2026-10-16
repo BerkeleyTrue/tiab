@@ -2,7 +2,7 @@
   description = "tiab - Trapped In A Box - A personal inventory system";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
@@ -13,20 +13,13 @@
           inherit system;
         };
 
-        # Node.js version
         nodejs = pkgs.nodejs_24;
-
-        # PNPM version from packageManager field
-        pnpm = pkgs.pnpm_10;
-
+        pnpm = pkgs.pnpm_12;
         packageJson = builtins.fromJSON (builtins.readFile ./package.json);
-
-        # Project name from package.json
         name = packageJson.name;
         version = packageJson.version;
       in
       {
-        # Package definition
         packages.default = pkgs.stdenv.mkDerivation (finalAttrs: {
           pname = name;
           inherit version;
@@ -35,7 +28,7 @@
           nativeBuildInputs = [
             nodejs
             pnpm
-            pnpm.configHook
+            pkgs.pnpmConfigHook
           ];
 
           buildInputs = [
@@ -72,8 +65,8 @@
             runHook postInstall
           '';
 
-          pnpmDeps = pnpm.fetchDeps {
-            fetcherVersion = 1;
+          pnpmDeps = pkgs.fetchPnpmDeps {
+            fetcherVersion = 4;
             inherit (finalAttrs) pname version src;
             hash = "sha256-TNd8g5uKBhWsujT0OXb8jWaPXKFqOcnHgfyAxIRIQKQ="; 
           };
